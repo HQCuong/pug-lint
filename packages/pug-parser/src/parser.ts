@@ -1,4 +1,6 @@
-import type { Comment, PugDocument, PugLine, PugNode, PugParseError, Range, Tag } from './ast.ts'
+import type { AttributeBlock, Comment, PugDocument, PugLine, PugNode, PugParseError, Range, Tag } from './ast.ts'
+import { isWhitespace, skipExpression } from './expression.ts'
+import { parseAttributeBlock } from './parse-attributes.ts'
 import { type RawLine, scanLines } from './scanner.ts'
 
 export interface ParseOptions {
@@ -17,6 +19,8 @@ const TAG_NAME = /[A-Za-z](?:[\w:-]*\w)?/y
 // As in pug-lexer: a class name contains at least one letter or '_'.
 const CLASS_NAME = /[_a-zA-Z0-9-]*[_a-zA-Z][_a-zA-Z0-9-]*/y
 const ID_NAME = /[\w-]+/y
+const AND_ATTRIBUTES = '&attributes('
+const UNCLOSED = new Set(['unclosed-attributes', 'unterminated-string'])
 
 /** Match a sticky regex at `pos` of `s`. */
 function matchAt(re: RegExp, s: string, pos: number): string | null {
@@ -36,6 +40,8 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
   const docStart = Math.min(Math.max(options.start ?? 0, 0), text.length)
   const docEnd = Math.min(Math.max(options.end ?? text.length, docStart), text.length)
   const raw = scanLines(text, docStart, docEnd)
+  // Scanning `src` instead of `text` keeps every lookahead (regex, startsWith) inside the range.
+  const src = docEnd === text.length ? text : text.slice(0, docEnd)
   const children: PugNode[] = []
   const errors: PugParseError[] = []
   const lines: PugLine[] = []
@@ -95,36 +101,120 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
     return { node: { type: 'Comment', buffered: !unbuffered, range: [start, end], content }, next }
   }
 
-  /** A tag head (name, `.class`, `#id`); the rest of the line is reported as unsupported. */
-  function parseTag(line: RawLine): Tag | null {
-    const [start, end] = [line.indent[1], line.range[1]]
-    const s = text.slice(start, end)
-    let pos = 0
+  /**
+   * The tag head starting at `start` (name, `.class`/`#id`, attribute blocks,
+   * `&attributes(…)`, trailing `/`), reading no further than `limit`. `unclosed`
+   * is true when a block or `&attributes` paren is not closed before `limit`.
+   */
+  function parseHead(start: number, limit: number) {
+    const errs: PugParseError[] = []
+    let pos = start
     let name: Tag['name'] = null
-    const tagName = matchAt(TAG_NAME, s, pos)
+    const tagName = matchAt(TAG_NAME, src, pos)
     if (tagName) {
       name = { value: tagName, range: [start, start + tagName.length] }
-      pos = tagName.length
+      pos += tagName.length
     }
     const shorthands: Tag['shorthands'] = []
+    const attributeBlocks: AttributeBlock[] = []
+    const andAttributes: Tag['andAttributes'] = []
+    let unclosed = false
+    let selfClose: Range | null = null
     for (;;) {
-      const sigil = s[pos]
-      if (sigil !== '.' && sigil !== '#') break
-      const value = matchAt(sigil === '.' ? CLASS_NAME : ID_NAME, s, pos + 1)
-      if (!value) break
-      const kind = sigil === '.' ? 'class' : 'id'
-      shorthands.push({ kind, value, range: [start + pos, start + pos + 1 + value.length] })
-      pos += 1 + value.length
+      const sigil = src[pos]
+      if (sigil === '.' || sigil === '#') {
+        const value = matchAt(sigil === '.' ? CLASS_NAME : ID_NAME, src, pos + 1)
+        if (!value) break
+        shorthands.push({ kind: sigil === '.' ? 'class' : 'id', value, range: [pos, pos + 1 + value.length] })
+        pos += 1 + value.length
+      } else if (!name && shorthands.length === 0) {
+        break   // attributes need a tag name or shorthand before them
+      } else if (sigil === '(') {
+        const result = parseAttributeBlock(src, pos, limit)
+        attributeBlocks.push(result.block)
+        errs.push(...result.errors)
+        if (result.errors.some((e) => UNCLOSED.has(e.code))) unclosed = true
+        pos = result.next
+      } else if (src.startsWith(AND_ATTRIBUTES, pos)) {
+        const open = pos + AND_ATTRIBUTES.length - 1
+        const before = errs.length
+        const close = skipExpression(src, open + 1, limit, { comma: false, whitespace: false }, errs)
+        const closed = close < limit && src[close] === ')'
+        if (!closed) {
+          unclosed = true
+          if (errs.length === before) {
+            errs.push({ code: 'unclosed-attributes', message: '&attributes is not closed with ")"', offset: open })
+          }
+        }
+        let [es, ee] = [open + 1, close]
+        while (es < ee && isWhitespace(src[es])) es++
+        while (ee > es && isWhitespace(src[ee - 1])) ee--
+        andAttributes.push({ range: [pos, closed ? close + 1 : close], expression: [es, ee] })
+        pos = closed ? close + 1 : close
+      } else {
+        break
+      }
     }
-    if (pos < s.length) {
+    if ((name || shorthands.length > 0) && src[pos] === '/' && pos < limit) {
+      selfClose = [pos, pos + 1]
+      pos++
+    }
+    return { name, shorthands, attributeBlocks, andAttributes, selfClose, errs, unclosed, pos }
+  }
+
+  /**
+   * The tag on raw[index]; `last` is the raw index of the head's last line (a
+   * multi-line attribute block). An unclosed block is re-read within its first
+   * line, so it never swallows the lines after it. The rest of the head's last
+   * line is reported as unsupported.
+   */
+  function parseTag(index: number): { node: Tag | null; last: number } {
+    const line = raw[index]!
+    const start = line.indent[1]
+    let head = parseHead(start, docEnd)
+    if (head.unclosed) head = parseHead(start, line.range[1])
+    errors.push(...head.errs)
+    let last = index
+    while (last + 1 < raw.length && raw[last + 1]!.range[0] <= head.pos) last++
+    const end = raw[last]!.range[1]
+    if (head.pos < end) {
       errors.push({
-        code: 'unsupported-syntax', message: `Unsupported syntax: ${JSON.stringify(s.slice(pos))}`, offset: start + pos,
+        code: 'unsupported-syntax',
+        message: `Unsupported syntax: ${JSON.stringify(src.slice(head.pos, end))}`,
+        offset: head.pos,
       })
     }
-    if (!name && shorthands.length === 0) return null
+    if (!head.name && head.shorthands.length === 0) return { node: null, last }
+    const { name, shorthands, attributeBlocks, andAttributes, selfClose } = head
     return {
-      type: 'Tag', range: [start, end], name, shorthands, attributeBlocks: [], andAttributes: [],
-      selfClose: null, dot: null, expansion: null, children: [],
+      node: {
+        type: 'Tag', range: [start, end], name, shorthands, attributeBlocks, andAttributes,
+        selfClose, dot: null, expansion: null, children: [],
+      },
+      last,
+    }
+  }
+
+  /** Line kinds for raw[index + 1 .. last], the continuation of a multi-line tag head. */
+  function pushHeadLines(tag: Tag | null, index: number, last: number, depth: number): void {
+    const spans: Range[] = tag
+      ? [...tag.attributeBlocks.flatMap((b) => b.attributes.map((a) => a.range)), ...tag.andAttributes.map((a) => a.range)]
+      : []
+    for (let k = index + 1; k <= last; k++) {
+      const l = raw[k]!
+      const lineStart = l.range[0]
+      const span = spans.find(([s, e]) => s < lineStart && lineStart < e)
+      if (span) {
+        let anchor = k
+        while (anchor > index && raw[anchor]!.range[0] > span[0]) anchor--
+        pushLine(l, 'continuation', depth + 1, anchor)
+      } else if (l.blank) {
+        pushLine(l, 'blank', 0)
+      } else if (src[l.indent[1]] === ')') {
+        pushLine(l, 'paren-close', depth)
+      } else {
+        pushLine(l, 'attribute', depth + 1)
+      }
     }
   }
 
@@ -146,8 +236,10 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
       node = comment.node
       i = comment.next
     } else {
-      node = parseTag(line)
-      i++
+      const tag = parseTag(i)
+      node = tag.node
+      pushHeadLines(node, i, tag.last, depth)
+      i = tag.last + 1
     }
     if (node) siblings.push(node)
     stack.push({ indent, node })

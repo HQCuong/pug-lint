@@ -254,7 +254,7 @@ describe('parsePug: options, lines, errors', () => {
     const src = 'p(x) hi\n  | text\nspan'
     const doc = parse(src)
     expect(doc.errors.map((e) => [e.code, e.offset])).toEqual([
-      ['unsupported-syntax', at(src, '(')[0]],
+      ['unsupported-syntax', at(src, ' hi')[0]],
       ['unsupported-syntax', at(src, '|')[0]],
     ])
     expect(doc.children.map((c) => asTag(c).name?.value)).toEqual(['p', 'span'])
