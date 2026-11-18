@@ -23,7 +23,7 @@ export type Case = string | CaseFields
 export type InvalidCase = CaseFields & {
   /** A template body (wrapped like `pug`), or `null` for "no fix". */
   output?: string | null
-  errors: { messageId: string; line?: number; column?: number; endLine?: number; endColumn?: number }[]
+  errors: { messageId: string; data?: Record<string, string>; line?: number; column?: number; endLine?: number; endColumn?: number }[]
 }
 
 interface TesterCase {

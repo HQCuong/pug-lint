@@ -11,7 +11,7 @@ div
     title="y") Three
   a(href="/x",
     title="y"
-    ) Four
+  ) Four
   button( type="button" @click="go" ) Five
 </template>
 

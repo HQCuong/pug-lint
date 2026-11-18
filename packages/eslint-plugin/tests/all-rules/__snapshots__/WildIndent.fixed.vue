@@ -1,11 +1,11 @@
 <template lang="pug">
 div
-     section
-       h1 Title
-       p
-          span   text
-     footer
-           small {{ year }}
+  section
+    h1 Title
+    p
+      span   text
+  footer
+    small {{ year }}
 </template>
 
 <script setup>
