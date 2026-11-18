@@ -1,5 +1,5 @@
 ﻿<template lang="pug">
-.card#main(class="wrap")
+.card#main.wrap
   MyButton(:foo-bar="x" title="hi" @click="onClick") Save
   ul
     li(v-for="item in items") {{ item.name }}

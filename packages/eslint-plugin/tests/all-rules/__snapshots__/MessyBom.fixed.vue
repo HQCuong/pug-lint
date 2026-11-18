@@ -1,7 +1,7 @@
 ﻿<template lang="pug">
-.page#root(class="a b")
+.page#root.a.b
   header
-    h1(class="title" :title="t") {{ t }}
+    h1.title(:title="t") {{ t }}
   MyButton(
     type="button"
     :disabled="busy"

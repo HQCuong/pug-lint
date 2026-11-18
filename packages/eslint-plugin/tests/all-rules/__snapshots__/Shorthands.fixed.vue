@@ -5,9 +5,9 @@
       Foo
       img(src="/x.png")
       br
-    div(class="a b")
-      span(id="x") id
-      span(id="two" class="one") both
+    .a.b
+      span#x id
+      span#two.one both
 </template>
 
 <script setup>

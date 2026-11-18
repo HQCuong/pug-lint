@@ -10,6 +10,7 @@ import indent from './indent.ts'
 import maxAttributesPerLine from './max-attributes-per-line.ts'
 import noMultiSpaces from './no-multi-spaces.ts'
 import noPugControlFlow from './no-pug-control-flow.ts'
+import preferShorthand from './prefer-shorthand.ts'
 import selfClosing from './self-closing.ts'
 
 export const rules: Record<string, Rule.RuleModule> = {
@@ -23,5 +24,6 @@ export const rules: Record<string, Rule.RuleModule> = {
   'max-attributes-per-line': maxAttributesPerLine,
   'no-multi-spaces': noMultiSpaces,
   'no-pug-control-flow': noPugControlFlow,
+  'prefer-shorthand': preferShorthand,
   'self-closing': selfClosing,
 }
