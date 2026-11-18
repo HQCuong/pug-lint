@@ -1,13 +1,21 @@
 // Whitespace mutation for the convergence gate: structure-preserving noise, driven by the CST, that
 // the recommended `vue-pug/*` rules must undo exactly. Every site is mutated or not by a seeded PRNG,
 // so a failing seed reproduces.
-import type { Attribute, AttributeBlock, PugDocument, PugLine, PugNode, Range, Tag } from '@pug-lint/parser'
-import { literalSpans, walk } from '@pug-lint/parser'
+import type { AttributeBlock, PugDocument, PugLine, PugNode, Range, Tag } from '@pug-lint/parser'
+import { walk } from '@pug-lint/parser'
+import { stringSpans } from '../../src/rules/indent.ts'
 import { getPugTemplates, templateFingerprint } from '../../src/shared/templates.ts'
+import { errorLineRanges } from '../../src/utils/create-rule.ts'
+
+/** The kinds of noise `mutateWhitespace` applies, reported through its `trace` argument. */
+export type MutationKind =
+  | 'comma-added' | 'comma-removed' | 'attribute-spacing' | 'paren-spacing' | 'equals-spacing'
+  | 'quote-swap' | 'div-added' | 'div-removed' | 'reindent' | 'anchored-shift'
 
 interface Edit {
   range: Range
   text: string
+  kind: MutationKind
 }
 
 /** mulberry32: a small deterministic PRNG returning floats in [0, 1). */
@@ -22,43 +30,6 @@ function prng(seed: number): () => number {
   }
 }
 
-const isBound = (key: string): boolean => /^(?::|@|#|\.|v-)/.test(key)
-
-/** String and template literal spans of attribute values, `&attributes(…)` and mixin arguments (as `vue-pug/indent` sees them). */
-function stringSpans(doc: PugDocument, text: string): Range[] {
-  const spans: Range[] = []
-  const ofAttribute = ({ key, value }: Attribute): void => {
-    if (value === null) return
-    if (isBound(key.raw) && value.kind === 'string' && value.inner) spans.push(...literalSpans(text, value.inner))
-    else spans.push(...literalSpans(text, value.range))
-  }
-  walk(doc, (node) => {
-    if (node.type !== 'Tag' && node.type !== 'MixinCall' && node.type !== 'Filter') return
-    for (const block of node.attributeBlocks) block.attributes.forEach(ofAttribute)
-    if (node.type === 'Filter') return
-    for (const and of node.andAttributes) spans.push(...literalSpans(text, and.expression))
-    if (node.type === 'MixinCall' && node.args) spans.push(...literalSpans(text, node.args))
-  })
-  return spans
-}
-
-/** Indexes of the lines of error-recovery regions: lines holding an error, and continuation lines anchored at or before one. */
-function errorLines(doc: PugDocument): Set<number> {
-  const { lines, errors } = doc
-  const holding = new Set<number>()
-  for (const { offset } of errors) {
-    let k = -1
-    for (let i = 0; i < lines.length && lines[i]!.range[0] <= offset; i++) k = i
-    if (k >= 0) holding.add(k)
-  }
-  const out = new Set(holding)
-  lines.forEach((line, k) => {
-    if (line.kind !== 'continuation' || line.anchor === null) return
-    for (let j = line.anchor; j < k; j++) if (holding.has(j)) out.add(k)
-  })
-  return out
-}
-
 /**
  * The indent model, inverted: every `node`/`attribute`/`paren-close` line and every unanchored `raw`
  * line gets `unit × depth`; an anchored line (raw after the first, continuation) moves by exactly the
@@ -69,13 +40,13 @@ function reindent(doc: PugDocument, text: string, unit: string, edits: Edit[]): 
   const { lines } = doc
   const spans = stringSpans(doc, text)
   const inString = (offset: number): boolean => spans.some(([s, e]) => s < offset && offset < e)
-  const skipped = errorLines(doc)
+  const unreliable = new Set(errorLineRanges(doc).map(([start]) => start))
   const delta: number[] = []
   const char = unit[0]!
   lines.forEach((line: PugLine, k) => {
     delta[k] = 0
     const ws = text.slice(...line.indent)
-    if (line.kind === 'blank' || line.indent[1] === line.range[1] || skipped.has(k)) return
+    if (line.kind === 'blank' || line.indent[1] === line.range[1] || unreliable.has(line.range[0])) return
     if (line.indent[0] > 0 && text[line.indent[0] - 1] !== '\n' && text[line.indent[0] - 1] !== '\r') return
     if (inString(line.range[0])) return
     let target: string
@@ -87,7 +58,7 @@ function reindent(doc: PugDocument, text: string, unit: string, edits: Edit[]): 
       target = char.repeat(d) + ws
     }
     delta[k] = target.length - ws.length
-    if (target !== ws) edits.push({ range: line.indent, text: target })
+    if (target !== ws) edits.push({ range: line.indent, text: target, kind: line.anchor === null ? 'reindent' : 'anchored-shift' })
   })
 }
 
@@ -99,33 +70,36 @@ function mutateBlock(block: AttributeBlock, text: string, rand: () => number, ed
   // Inside the parens: only where the attribute text is on the paren's line.
   const open = block.range[0] + 1
   const close = block.range[1] - 1
-  if (!/\s/.test(text[open]!) && rand() < 0.5) edits.push({ range: [open, open], text: pick([' ', '  ']) })
-  if (!/\s/.test(text[close - 1]!) && rand() < 0.5) edits.push({ range: [close, close], text: pick([' ', '  ']) })
+  if (!/\s/.test(text[open]!) && rand() < 0.5) edits.push({ range: [open, open], text: pick([' ', '  ']), kind: 'paren-spacing' })
+  if (!/\s/.test(text[close - 1]!) && rand() < 0.5) edits.push({ range: [close, close], text: pick([' ', '  ']), kind: 'paren-spacing' })
   for (let i = 0; i + 1 < attributes.length; i++) {
     const gap: Range = [attributes[i]!.range[1], attributes[i + 1]!.range[0]]
     const between = text.slice(...gap)
     const hasComma = commas.some(([s]) => gap[0] <= s && s < gap[1])
     if (/[\r\n]/.test(between)) {
       // A line break between them: add a comma at the end of the attribute, or drop an existing one.
-      if (!hasComma && rand() < 0.5) edits.push({ range: [gap[0], gap[0]], text: ',' })
+      if (!hasComma && rand() < 0.5) edits.push({ range: [gap[0], gap[0]], text: ',', kind: 'comma-added' })
       else if (hasComma && between.trim() === ',' && rand() < 0.5) {
         const at = gap[0] + between.indexOf(',')
-        edits.push({ range: [at, at + 1], text: '' })
+        edits.push({ range: [at, at + 1], text: '', kind: 'comma-removed' })
       }
     } else if (/^[ ,]*$/.test(between) && rand() < 0.7) {
-      edits.push({ range: gap, text: pick([' ', '  ', '   ', ',', ', ', ',  ', ' , ']) })
+      const next = pick([' ', '  ', '   ', ',', ', ', ',  ', ' , '])
+      const comma = next.includes(',')
+      const kind = comma && !hasComma ? 'comma-added' : !comma && hasComma ? 'comma-removed' : 'attribute-spacing'
+      if (next !== between) edits.push({ range: gap, text: next, kind })
     }
   }
   for (const { operator, value } of attributes) {
     if (operator?.value === '=') {
-      if (rand() < 0.3) edits.push({ range: [operator.range[0], operator.range[0]], text: ' ' })
-      if (rand() < 0.3) edits.push({ range: [operator.range[1], operator.range[1]], text: ' ' })
+      if (rand() < 0.3) edits.push({ range: [operator.range[0], operator.range[0]], text: ' ', kind: 'equals-spacing' })
+      if (rand() < 0.3) edits.push({ range: [operator.range[1], operator.range[1]], text: ' ', kind: 'equals-spacing' })
     }
     if (value?.kind === 'string' && value.inner && rand() < 0.5) {
       const body = text.slice(...value.inner)
       if (/['"\\\r\n]/.test(body)) continue
       const q = value.quote === '"' ? "'" : '"'
-      edits.push({ range: value.range, text: q + body + q })
+      edits.push({ range: value.range, text: q + body + q, kind: 'quote-swap' })
     }
   }
 }
@@ -134,8 +108,8 @@ function mutateBlock(block: AttributeBlock, text: string, rand: () => number, ed
 function toggleDiv(tag: Tag, rand: () => number, edits: Edit[]): void {
   const first = tag.shorthands[0]
   if (!first || rand() >= 0.5) return
-  if (tag.name === null) edits.push({ range: [first.range[0], first.range[0]], text: 'div' })
-  else if (tag.name.value === 'div' && first.range[0] === tag.name.range[1]) edits.push({ range: tag.name.range, text: '' })
+  if (tag.name === null) edits.push({ range: [first.range[0], first.range[0]], text: 'div', kind: 'div-added' })
+  else if (tag.name.value === 'div' && first.range[0] === tag.name.range[1]) edits.push({ range: tag.name.range, text: '', kind: 'div-removed' })
 }
 
 function mutateTemplate(doc: PugDocument, text: string, rand: () => number, edits: Edit[]): void {
@@ -172,12 +146,14 @@ function apply(code: string, edits: Edit[]): string {
  * `=`, swap the quotes of a string value whose body has no quote, backslash or line break, toggle
  * `div.x` ↔ `.x`, and re-indent with a random unit (3 or 4 of the file's whitespace character) under
  * the indent model. Throws when the result's `templateFingerprint` differs from `code`'s.
+ * `trace`, when given, receives the kind of every edit applied.
  */
-export function mutateWhitespace(code: string, seed: number): string {
+export function mutateWhitespace(code: string, seed: number, trace?: Set<MutationKind>): string {
   const rand = prng(seed)
   const edits: Edit[] = []
   for (const { doc } of getPugTemplates(code)) mutateTemplate(doc, code, rand, edits)
   const out = apply(code, edits)
+  for (const { kind } of edits) trace?.add(kind)
   const before = templateFingerprint(code)
   const after = templateFingerprint(out)
   if (after !== before) {

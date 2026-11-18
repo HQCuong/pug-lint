@@ -6,20 +6,36 @@ import { basename } from 'node:path'
 import type { Linter } from 'eslint'
 import { describe, expect, it } from 'vitest'
 import plugin from '../../src/index.ts'
-import { templateFingerprint } from '../../src/shared/templates.ts'
+import { findPugTemplateRanges, templateFingerprint } from '../../src/shared/templates.ts'
 import type { EslintVersion } from '../helpers/eslint-versions.ts'
 import { eslintVersions } from '../helpers/eslint-versions.ts'
 import { lintText } from '../helpers/lint.ts'
 import { vue } from '../helpers/vue.ts'
 import { allRulesConfig } from './config.ts'
+import type { MutationKind } from './mutate.ts'
 import { mutateWhitespace } from './mutate.ts'
 
 const dir = new URL('../fixtures/format/', import.meta.url)
+const snapshot = (name: string): string =>
+  readFileSync(new URL(`__snapshots__/${name}.fixed.vue`, import.meta.url), 'utf8')
 const fixtures = readdirSync(dir)
   .filter((f) => f.endsWith('.vue'))
   .sort()
   .map((f) => ({ name: basename(f, '.vue'), text: readFileSync(new URL(f, dir), 'utf8') }))
-const largest = fixtures.reduce((a, b) => (b.text.length > a.text.length ? b : a))
+
+// The guard re-parses the whole template once per distinct fix, so fixing noise over n lines costs
+// about n² (measured: ~0.2 s for 400 lines, ~1 s for 800, ~12 s for 3000). Two copies (~400 lines)
+// keep this check far from the budget; larger inputs are an open guard performance issue.
+const SYNTHETIC_COPIES = 2
+/** The fixed template bodies of every format fixture (LF, from their reviewed snapshots), concatenated `SYNTHETIC_COPIES` times. */
+function syntheticCanonical(): string {
+  const bodies = fixtures.map(({ name }) => {
+    const text = snapshot(name).replace(/\r\n/g, '\n')
+    const [range] = findPugTemplateRanges(text)
+    return text.slice(...range!).replace(/^\n+|\n+$/g, '')
+  })
+  return vue(Array.from({ length: SYNTHETIC_COPIES }, () => bodies.join('\n')).join('\n'))
+}
 
 const SEEDS = Array.from({ length: 20 }, (_, i) => i + 1)
 const TIME_BUDGET_MS = 2000
@@ -35,6 +51,12 @@ async function fix(v: EslintVersion, name: string, text: string, config?: Linter
   const { output } = await lintText(v, text, used, { fix: true, filename: `${name}.vue` })
   expect(drops).toEqual([])
   return output
+}
+
+/** The text before and after the Pug template's content. */
+function outsideTemplate(text: string): [string, string] {
+  const [range] = findPugTemplateRanges(text)
+  return [text.slice(0, range![0]), text.slice(range![1])]
 }
 
 /** `<script>` and `<style>` blocks, start tag to end tag. */
@@ -89,6 +111,26 @@ describe('mutateWhitespace', () => {
       expect(out).toContain('`a\nb`')
     }
   })
+  it('applies every mutation kind for some seed', () => {
+    const kinds = new Set<MutationKind>()
+    const outputs = SEEDS.map((seed) => mutateWhitespace(text, seed, kinds))
+    const all: MutationKind[] = [
+      'comma-added', 'comma-removed', 'attribute-spacing', 'paren-spacing', 'equals-spacing',
+      'quote-swap', 'div-added', 'div-removed', 'reindent', 'anchored-shift',
+    ]
+    expect([...kinds].sort()).toEqual(all.sort())
+    // And the effects are visible in the text.
+    const some = (re: RegExp): boolean => outputs.some((out) => re.test(out))
+    expect(some(/x\s*=\s*"1"\s*,\s*y/)).toBe(true)
+    expect(some(/x\s*=\s*"1"\s+y/)).toBe(true)
+    expect(some(/\( +x/)).toBe(true)
+    expect(some(/x = /)).toBe(true)
+    expect(some(/x\s*=\s*'1'/)).toBe(true)
+    expect(some(/y\s*=\s*"2"/)).toBe(true)
+    expect(some(/^\.a$/m)).toBe(true)
+    expect(some(/^ +div\.b/m)).toBe(true)
+    expect(some(/^ {4}p\.\n {8}one\n {10}two$/m)).toBe(true)
+  })
 })
 
 describe.each(eslintVersions)('convergence ($label)', (v) => {
@@ -110,12 +152,26 @@ describe.each(eslintVersions)('convergence ($label)', (v) => {
       expect(blocks.length).toBeGreaterThan(0)
       const fixed = await fix(v, name, text, plugin.configs.recommended)
       expect(nonTemplateBlocks(fixed)).toEqual(blocks)
+      expect(outsideTemplate(fixed)).toEqual(outsideTemplate(text))
+      // Not vacuous: a non-canonical template was rewritten.
+      if (text !== snapshot(name)) expect(fixed).not.toBe(text)
     })
   })
 
-  it(`fixes the largest format fixture (${largest.name}) in under ${TIME_BUDGET_MS} ms`, async () => {
+  it(`fixes a large synthetic template (every format fixture, ${SYNTHETIC_COPIES}×, mutated) in under ${TIME_BUDGET_MS} ms`, async () => {
+    const canonical = syntheticCanonical()
+    expect(canonical.split('\n').length).toBeGreaterThan(400)
+    // The first seed whose noise includes a re-indent: every line then needs fixing.
+    let mutated = canonical
+    for (let seed = 1; seed <= SEEDS.length && mutated === canonical; seed++) {
+      const kinds = new Set<MutationKind>()
+      const out = mutateWhitespace(canonical, seed, kinds)
+      if (kinds.has('reindent')) mutated = out
+    }
+    expect(mutated).not.toBe(canonical)
     const start = performance.now()
-    await fix(v, largest.name, largest.text)
+    const output = await fix(v, 'Synthetic', mutated)
     expect(performance.now() - start).toBeLessThan(TIME_BUDGET_MS)
+    expect(output).toBe(canonical)
   })
 })

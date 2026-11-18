@@ -38,8 +38,8 @@ export interface PugRuleDefinition<O extends unknown[]> {
   check(ctx: PugRuleContext<O>): void
 }
 
-/** Ranges (without EOL) of the lines `inErrorRegion` treats as unreliable. */
-function errorLineRanges(doc: PugDocument): Range[] {
+/** Ranges (without EOL) of the lines `inErrorRegion` treats as unreliable. Also used by the convergence gate's mutation. */
+export function errorLineRanges(doc: PugDocument): Range[] {
   const { lines, errors } = doc
   if (errors.length === 0) return []
   const errorLines = new Set<number>()

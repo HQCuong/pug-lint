@@ -42,8 +42,8 @@ function shifted(line: PugLine, ws: string, anchorOld: string, anchorNew: string
 // Vue parses these attribute values as JavaScript; any other value is the string itself.
 const isBound = (key: string): boolean => /^(?::|@|#|\.|v-)/.test(key)
 
-/** String and template literal spans of attribute values, mixin arguments and `&attributes(…)`, by start. */
-function stringSpans(doc: PugDocument, text: string): Range[] {
+/** String and template literal spans of attribute values, mixin arguments and `&attributes(…)`, by start. Also used by the convergence gate's mutation. */
+export function stringSpans(doc: PugDocument, text: string): Range[] {
   const spans: Range[] = []
   const ofAttribute = ({ key, value }: Attribute): void => {
     if (value === null) return
