@@ -15,6 +15,7 @@ parser reports them with this code too.
 | Interpolated tag name | `#{tag} text` | |
 | Tag interpolation or mustache at line start | `#[b x] y`, `{{ x }}` | Use `\| #[b x] y` / `\| {{ x }}`. |
 | Anything else that does not start a Pug construct | `)`, `@x`, `.5` | |
+| Lines nested under piped text | `\| a` with an indented `p` below it | Invalid Pug. Reported once, at the first nested line; the nested lines are skipped and form an error-recovery region (`doc.lines` kind `continuation`). Lines nested under literal HTML (`<ul>`) are valid: Pug makes them siblings, and so does the parser. |
 
 ## After a tag or mixin call head
 

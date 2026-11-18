@@ -59,6 +59,9 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
   const errors: PugParseError[] = []
   const lines: PugLine[] = []
   const stack: Open[] = []
+  // Error-recovery regions [anchor, last]: raw lines anchor+1..last are what the
+  // parser did not understand (lines index == raw index, as lines tile the range).
+  const regions: [anchor: number, last: number][] = []
   let base: string | null = null          // indent of the first node line: the root level
   let indentUnit: string | null = null
 
@@ -68,6 +71,12 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
   }
   const inconsistent = (offset: number, message: string): void => {
     errors.push({ code: 'inconsistent-indentation', message, offset })
+  }
+  /** Index of the last raw line from raw[from] on that starts at or before `pos`. */
+  const lineAt = (pos: number, from: number): number => {
+    let k = from
+    while (k + 1 < raw.length && raw[k + 1]!.range[0] <= pos) k++
+    return k
   }
 
   /** Pop the stack down to this line's parent level and return the node list it joins. */
@@ -310,10 +319,13 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
     const read = (limit: number): TagHead | MixinHead =>
       (src[start] === '+' && parseMixinHead(src, start, limit)) || parseTagHead(src, start, limit)
     let head = read(docEnd)
-    if (head.unclosed) head = read(line.range[1])
+    if (head.unclosed) {
+      // Pug reads on to where the first read stopped: an error-recovery region.
+      regions.push([index, lineAt(head.pos, index)])
+      head = read(line.range[1])
+    }
     errors.push(...head.errs)
-    let last = index
-    while (last + 1 < raw.length && raw[last + 1]!.range[0] <= head.pos) last++
+    const last = lineAt(head.pos, index)
     const end = raw[last]!.range[1]
     const mixin = 'mixinName' in head
     const isNode = mixin || head.name !== null || head.shorthands.length > 0
@@ -369,13 +381,15 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
     const attributeBlocks: AttributeBlock[] = []
     while (src[pos] === '(') {
       let result = parseAttributeBlock(src, pos, docEnd)
-      if (result.errors.some((e) => UNCLOSED.has(e.code))) result = parseAttributeBlock(src, pos, line.range[1])
+      if (result.errors.some((e) => UNCLOSED.has(e.code))) {
+        regions.push([index, lineAt(result.next, index)])
+        result = parseAttributeBlock(src, pos, line.range[1])
+      }
       attributeBlocks.push(result.block)
       errors.push(...result.errors)
       pos = result.next
     }
-    let last = index
-    while (last + 1 < raw.length && raw[last + 1]!.range[0] <= pos) last++
+    const last = lineAt(pos, index)
     const end = raw[last]!.range[1]
     const children: Text[] = []
     if (pos < end) {
@@ -390,20 +404,33 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
     return { node, last }
   }
 
-  /** Line kinds for raw[index + 1 .. last], the continuation of a multi-line head (`nodes`: those on it). */
+  /**
+   * Line kinds for raw[index + 1 .. last], the continuation of a multi-line head
+   * (`nodes`: those on it). Mixin call arguments are one JS expression: their
+   * lines are continuation lines anchored to the line of their '(' (a line
+   * starting with their ')' is a paren-close line); a line inside a multi-line
+   * attribute is anchored to the line the attribute starts on.
+   */
   function pushHeadLines(nodes: readonly (Tag | MixinCall | Filter)[], index: number, last: number, depth: number): void {
+    const args: Range[] = nodes.flatMap((n) => (n.type === 'MixinCall' && n.args ? [n.args] : []))
     const spans: Range[] = nodes.flatMap((n) => [
       ...n.attributeBlocks.flatMap((b) => b.attributes.map((a) => a.range)),
       ...('andAttributes' in n ? n.andAttributes.map((a) => a.range) : []),
     ])
+    const lineOf = (offset: number, k: number): number => {
+      while (k > index && raw[k]!.range[0] > offset) k--
+      return k
+    }
     for (let k = index + 1; k <= last; k++) {
       const l = raw[k]!
       const lineStart = l.range[0]
-      const span = spans.find(([s, e]) => s < lineStart && lineStart < e)
-      if (span) {
-        let anchor = k
-        while (anchor > index && raw[anchor]!.range[0] > span[0]) anchor--
-        pushLine(l, 'continuation', depth + 1, anchor)
+      const inside = ([s, e]: Range): boolean => s < lineStart && lineStart < e
+      const argList = args.find(inside)
+      const span = argList ?? spans.find(inside)
+      if (argList && l.indent[1] === argList[1] - 1) {
+        pushLine(l, 'paren-close', depth)
+      } else if (span) {
+        pushLine(l, 'continuation', depth + 1, lineOf(span[0], k))
       } else if (l.blank) {
         pushLine(l, 'blank', 0)
       } else if (src[l.indent[1]] === ')') {
@@ -411,6 +438,23 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
       } else {
         pushLine(l, 'attribute', depth + 1)
       }
+    }
+  }
+
+  /**
+   * Every line of an error-recovery region becomes a continuation line anchored
+   * to the line that started it, so indentation fixes never move what the
+   * parser did not understand. Overlapping regions merge into the first.
+   */
+  function markRegions(): void {
+    let anchor = -1
+    let last = -1
+    for (const [a, l] of regions) {
+      if (a > last) anchor = a
+      for (let k = Math.max(a, last) + 1; k <= l; k++) {
+        lines[k] = { ...lines[k]!, kind: 'continuation', depth: lines[anchor]!.depth + 1, anchor }
+      }
+      last = Math.max(last, l)
     }
   }
 
@@ -438,7 +482,17 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
       i = comment.next
     } else if (first === '|' || first === '<') {
       node = parseTextLine(line)
-      i++
+      const textLine = i++
+      // Pug rejects lines nested under piped text (under literal HTML they are
+      // siblings, which `attach` already does): one error, then a region.
+      if (first === '|') {
+        let reported = false
+        i = rawBlock(i, indent, depth, (l) => {
+          if (!reported) errors.push({ code: 'unsupported-syntax', message: 'Lines cannot be nested under piped text', offset: l.indent[1] })
+          reported = true
+        })
+        if (i > textLine + 1) regions.push([textLine, i - 1])
+      }
     } else if (first === '-') {
       const code = parseCodeLine(i, indent, depth)
       node = code.node
@@ -475,6 +529,8 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
     if (node) siblings.push(node)
     stack.push({ indent, node: leaf ?? node })
   }
+
+  markRegions()
 
   const firstEol = raw.find((l) => l.eol !== '')?.eol
   return {

@@ -104,7 +104,8 @@ function label(doc: PugDocument, node: Container): string {
  *   start of the parent's next sibling (or the end of the grandparent's extent);
  * - `doc.lines` tile `doc.range`: first starts at `doc.range[0]`, each next one
  *   starts right after the previous one's EOL, the last ends at `doc.range[1]`,
- *   and each `indent` is a whitespace prefix of its line.
+ *   and each `indent` is a whitespace prefix of its line;
+ * - every non-null `anchor` is the index of an earlier line.
  * A `TagInterpolation`'s tag is checked as a child of its `Text`.
  */
 export function assertInvariants(doc: PugDocument): void {
@@ -158,6 +159,10 @@ export function assertInvariants(doc: PugDocument): void {
     const [is, ie] = line.indent
     if (is !== s || ie < is || ie > e || !/^[ \t]*$/.test(text.slice(is, ie))) {
       fail(doc, `lines: ${where} has indent [${is}, ${ie}] that is not a whitespace prefix`)
+    }
+    const { anchor } = line
+    if (anchor !== null && !(Number.isInteger(anchor) && anchor >= 0 && anchor < i)) {
+      fail(doc, `lines: ${where} has anchor ${anchor}, which is not an earlier line`)
     }
     if (i === lines.length - 1) {
       if (e !== docEnd) fail(doc, `lines do not tile doc.range: last line ends at ${e}, not ${docEnd}`)
