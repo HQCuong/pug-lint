@@ -1,1 +1,2 @@
 packages/*/tests/fixtures/** -text
+packages/*/tests/all-rules/__snapshots__/** -text
