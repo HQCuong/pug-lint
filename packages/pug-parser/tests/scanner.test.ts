@@ -100,7 +100,7 @@ describe('assertInvariants', () => {
   it('rejects a node outside doc.range', () => {
     const bad = tag('div')
     bad.range = [0, text.length + 1]
-    expect(() => assertInvariants(makeDoc([bad]))).toThrow(/Tag/)
+    expect(() => assertInvariants(makeDoc([bad]))).toThrow(/Tag .*outside doc\.range/)
   })
 
   it('rejects overlapping siblings', () => {
@@ -115,6 +115,61 @@ describe('assertInvariants', () => {
     const p = tag('p hi')
     const div = tag('div', [inlineText()])
     expect(() => assertInvariants(makeDoc([div, p]))).toThrow(/parent/)
+  })
+
+  it('rejects a doc.range beyond the text and an error offset outside doc.range', () => {
+    const wide = makeDoc([])
+    wide.range = [0, text.length + 1]
+    expect(() => assertInvariants(wide)).toThrow(/doc\.range is not within/)
+    const err = makeDoc([])
+    err.errors.push({ code: 'x', message: 'x', offset: text.length + 1 })
+    expect(() => assertInvariants(err)).toThrow(/errors\[0\].*outside doc\.range/)
+  })
+
+  it('rejects a sub-range outside doc.range', () => {
+    const bad = tag('div')
+    bad.attributeBlocks.push({
+      range: [3, text.length + 2], commas: [],
+      attributes: [{ range: [4, 5], key: { raw: 'x', range: [4, 5] }, operator: null, value: null }],
+    })
+    expect(() => assertInvariants(makeDoc([bad]))).toThrow(/attributeBlocks\[0\]\.range .*outside doc\.range/)
+    const badName = tag('div')
+    badName.name = { value: 'div', range: [2, 1] }
+    expect(() => assertInvariants(makeDoc([badName]))).toThrow(/name\.range .*outside doc\.range/)
+  })
+
+  it('rejects Text content and parts outside the Text node', () => {
+    const t = inlineText()
+    t.content = at(text, 'p hi')
+    expect(() => assertInvariants(makeDoc([tag('div'), tag('p hi', [t])]))).toThrow(/content .*own range/)
+    const u = inlineText()
+    u.parts = [{ type: 'Interpolation', escaped: true, range: at(text, 'hi'), expression: at(text, 'p') }]
+    expect(() => assertInvariants(makeDoc([tag('div'), tag('p hi', [u])]))).toThrow(/parts\[0\]\.expression .*own range/)
+  })
+
+  it('checks a TagInterpolation tag as a child of its Text', () => {
+    const inner = (range: [number, number]): Tag => ({
+      type: 'Tag', range, name: null, shorthands: [], attributeBlocks: [], andAttributes: [],
+      selfClose: null, dot: null, expansion: null, children: [],
+    })
+    const withTag = (range: [number, number]): Text => ({
+      type: 'Text', form: 'inline', range: at(text, 'hi'), content: at(text, 'hi'),
+      parts: [{ type: 'TagInterpolation', range: at(text, 'hi'), tag: inner(range) }],
+    })
+    expect(() => assertInvariants(makeDoc([tag('div'), tag('p hi', [withTag(at(text, 'hi'))])]))).not.toThrow()
+    expect(() => assertInvariants(makeDoc([tag('div'), tag('p hi', [withTag(at(text, 'div'))])]))).toThrow(/parent/)
+  })
+
+  it('rejects an indent that is not a whitespace prefix', () => {
+    const lines = lineTable()
+    lines[0]!.indent = at(text, 'd')
+    expect(() => assertInvariants(makeDoc([], lines))).toThrow(/not a whitespace prefix/)
+  })
+
+  it('rejects a line that is not followed by an EOL', () => {
+    const lines = lineTable()
+    lines[0]!.range = at(text, 'di')
+    expect(() => assertInvariants(makeDoc([], lines))).toThrow(/not followed by an EOL/)
   })
 
   it('rejects lines that do not tile doc.range', () => {
