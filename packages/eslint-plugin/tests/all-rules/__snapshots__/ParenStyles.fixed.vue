@@ -7,9 +7,9 @@ div
   a(href="/x"
     title="y") Two
   a(
-    href="/x",
+    href="/x"
     title="y") Three
-  a(href="/x",
+  a(href="/x"
     title="y"
   ) Four
   button( type="button" @click="go" ) Five

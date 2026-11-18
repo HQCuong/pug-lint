@@ -1,6 +1,6 @@
 <template lang="pug">
 div
-  MyComp(v-model:value.trim="c"   :foo="a" , :[dyn]="d" @click="b")
+  MyComp(v-model:value.trim="c"   :foo="a"  :[dyn]="d" @click="b")
   template(#default="{ item }")
     span {{ item }}
   button(:disabled='!ok' @click.prevent="go()") Go
