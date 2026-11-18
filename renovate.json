@@ -1,0 +1,12 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "automerge": false,
+  "packageRules": [
+    {
+      "groupName": "eslint and vue tooling",
+      "matchPackageNames": ["eslint", "eslint9", "eslint-plugin-vue", "vue-eslint-parser"],
+      "automerge": false
+    }
+  ]
+}

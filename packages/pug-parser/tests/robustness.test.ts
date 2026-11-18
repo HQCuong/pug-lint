@@ -2,12 +2,13 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { fingerprint, parsePug } from '../src/index.ts'
 import { assertInvariants, toCRLF } from './helpers.ts'
+import { scaled } from './time-scale.ts'
 
 const SEED = 20261118
 const MUTATIONS_PER_FIXTURE = 300
-const MUTATION_BUDGET_MS = 200
+const MUTATION_BUDGET_MS = scaled(200)
 const LINEAR_LINES = 5000
-const LINEAR_BUDGET_MS = 500
+const LINEAR_BUDGET_MS = scaled(500)
 
 const dir = new URL('./fixtures/syntax/', import.meta.url)
 const fixtures = readdirSync(dir)

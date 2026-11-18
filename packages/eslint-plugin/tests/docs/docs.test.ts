@@ -110,3 +110,23 @@ describe('README', () => {
     expect(readme.match(/@pug-lint\/(?!eslint-plugin\b|parser\b)[\w-]+/g)).toBeNull()
   })
 })
+
+describe('docs scripts', () => {
+  const scripts = (JSON.parse(read('package.json')) as { scripts: Record<string, string> }).scripts
+
+  // pnpm 10 resolves `pnpm docs` to its builtin (opens the package homepage), so a script of that name never runs.
+  it('names the generator docs:gen, not the shadowed docs', () => {
+    expect(scripts['docs:gen']).toBeDefined()
+    expect(scripts['docs:check']).toBeDefined()
+    expect(scripts.docs).toBeUndefined()
+  })
+
+  it('points every stale-README message and README mention at an existing script', () => {
+    const mentioned = [
+      ...read('tools/docs/rules-table.ts').matchAll(/pnpm run ([\w:-]+)/g),
+      ...readFileSync(new URL('../../README.md', packageRoot), 'utf8').matchAll(/pnpm run (docs[\w:-]*)/g),
+    ].map((m) => m[1]!)
+    expect(mentioned.length).toBeGreaterThan(0)
+    for (const script of mentioned) expect(scripts, script).toHaveProperty(script)
+  })
+})

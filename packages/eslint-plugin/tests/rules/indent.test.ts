@@ -8,6 +8,7 @@ import rule from '../../src/rules/indent.ts'
 import { eslintVersions } from '../helpers/eslint-versions.ts'
 import { lintText } from '../helpers/lint.ts'
 import { runRule } from '../helpers/rule-tester.ts'
+import { scaled } from '../helpers/time-scale.ts'
 import { vue } from '../helpers/vue.ts'
 
 const unexpected = (line: number, expected: string, actual: string) =>
@@ -208,6 +209,6 @@ describe('indent fixes and the guard', () => {
     const ms = performance.now() - t0
     expect(kept.every((m) => m.fix)).toBe(true)
     // Measured ~50 ms; the per-message (quadratic) verification took several seconds here.
-    expect(ms).toBeLessThan(1500)
+    expect(ms).toBeLessThan(scaled(1500))
   })
 })

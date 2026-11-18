@@ -40,7 +40,7 @@ In `packages/eslint-plugin`:
 - `pnpm run compat` regenerates the `vue/*` rule compatibility table
   ([docs/vue-compatibility.md](packages/eslint-plugin/docs/vue-compatibility.md)); `pnpm run compat:check`
   fails when it is stale.
-- `pnpm run docs` regenerates the rule sections of the plugin README; `pnpm run docs:check` fails when they
+- `pnpm run docs:gen` regenerates the rule sections of the plugin README; `pnpm run docs:check` fails when they
   are stale.
 
 ## License

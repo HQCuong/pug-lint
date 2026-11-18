@@ -7,7 +7,7 @@
 //   node tools/docs/rules-table.ts           update README.md
 //   node tools/docs/rules-table.ts --check   exit 1 when README.md is stale
 //
-// Needs the parser's `dist` (the `docs` scripts build first).
+// Needs the parser's `dist` (the `docs:*` scripts build first).
 import { readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import type { Rule } from 'eslint'
@@ -81,7 +81,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const next = updateReadme(current)
   if (process.argv.includes('--check')) {
     if (next !== current) {
-      console.error('README.md is stale: run `pnpm run docs`.')
+      console.error('README.md is stale: run `pnpm run docs:gen`.')
       process.exit(1)
     }
   } else if (next !== current) {

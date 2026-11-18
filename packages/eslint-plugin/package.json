@@ -24,7 +24,7 @@
     "typecheck": "tsc --noEmit",
     "compat": "pnpm -w run build && node tools/compat/run.ts",
     "compat:check": "pnpm -w run build && node tools/compat/run.ts --check",
-    "docs": "pnpm -w run build && node tools/docs/rules-table.ts",
+    "docs:gen": "pnpm -w run build && node tools/docs/rules-table.ts",
     "docs:check": "pnpm -w run build && node tools/docs/rules-table.ts --check"
   },
   "dependencies": {

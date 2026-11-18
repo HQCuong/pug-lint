@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (node ${{ matrix.node }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20.19', '22', '24']
+        os: [ubuntu-latest, windows-latest]
+    env:
+      # Wall-clock budgets in the tests are multiplied by this; shared runners are slower and noisier.
+      PUG_LINT_TIME_SCALE: ${{ matrix.os == 'windows-latest' && '3' || '2' }}
+    steps:
+      # Keep CRLF fixtures byte-exact on Windows (.gitattributes pins them too).
+      - run: git config --global core.autocrlf true
+        if: matrix.os == 'windows-latest'
+      - uses: actions/checkout@v4
+      # pnpm's version comes from the root `packageManager` field.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm -C packages/eslint-plugin compat:check
+      - run: pnpm -C packages/eslint-plugin docs:check
+
+  # The lowest supported ESLint 9 / eslint-plugin-vue / vue-eslint-parser.
+  floor:
+    name: floor (eslint 9.15, eslint-plugin-vue 10.0)
+    runs-on: ubuntu-latest
+    env:
+      PUG_LINT_TIME_SCALE: '2'
+      # eslint-plugin-vue 10.0.0 predates ESLint 10 support, so only the `eslint9` entry runs.
+      PUG_LINT_ESLINT: '9'
+      # The vue-compat table is generated against current versions; drift against the floor is expected.
+      PUG_LINT_SKIP_COMPAT_DRIFT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm -C packages/eslint-plugin add -D eslint9@npm:eslint@9.15.0 eslint-plugin-vue@10.0.0 vue-eslint-parser@10.0.0
+      - run: pnpm -C packages/eslint-plugin test

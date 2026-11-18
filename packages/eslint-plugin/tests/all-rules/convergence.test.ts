@@ -10,6 +10,7 @@ import { findPugTemplateRanges, templateFingerprint } from '../../src/shared/tem
 import type { EslintVersion } from '../helpers/eslint-versions.ts'
 import { eslintVersions } from '../helpers/eslint-versions.ts'
 import { lintText } from '../helpers/lint.ts'
+import { scaled } from '../helpers/time-scale.ts'
 import { vue } from '../helpers/vue.ts'
 import { allRulesConfig } from './config.ts'
 import type { MutationKind } from './mutate.ts'
@@ -38,7 +39,7 @@ function syntheticCanonical(): string {
 }
 
 const SEEDS = Array.from({ length: 20 }, (_, i) => i + 1)
-const TIME_BUDGET_MS = 2000
+const TIME_BUDGET_MS = scaled(2000)
 
 const ours = (ruleId: string | null): boolean => ruleId?.startsWith('vue-pug/') ?? false
 

@@ -1,0 +1,58 @@
+name: Compat latest
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  compat:
+    runs-on: ubuntu-latest
+    env:
+      PUG_LINT_TIME_SCALE: '2'
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Install latest eslint, eslint-plugin-vue, vue-eslint-parser
+        run: pnpm -C packages/eslint-plugin add -D eslint@latest eslint-plugin-vue@latest vue-eslint-parser@latest
+      - name: Tests
+        id: tests
+        continue-on-error: true
+        run: pnpm test
+      - name: Regenerate the compat table
+        run: pnpm -C packages/eslint-plugin compat
+      - name: Collect the drift
+        id: drift
+        run: |
+          git diff -- packages/eslint-plugin/src/configs/generated/vue-compat.ts > "$RUNNER_TEMP/vue-compat.diff"
+          if [ -s "$RUNNER_TEMP/vue-compat.diff" ]; then echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+      - name: Open an issue on failure or drift
+        if: steps.tests.outcome == 'failure' || steps.drift.outputs.changed == 'true'
+        run: |
+          {
+            echo "Weekly compat run against the latest eslint, eslint-plugin-vue and vue-eslint-parser: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo
+            echo "- tests: ${{ steps.tests.outcome }}"
+            echo "- vue-compat.ts changed: ${{ steps.drift.outputs.changed == 'true' }}"
+            if [ -s "$RUNNER_TEMP/vue-compat.diff" ]; then
+              echo
+              echo '```diff'
+              head -c 50000 "$RUNNER_TEMP/vue-compat.diff"
+              echo '```'
+            fi
+          } > "$RUNNER_TEMP/body.md"
+          gh issue create --title "Compat check failed against latest ESLint/Vue tooling ($(date -u +%F))" --body-file "$RUNNER_TEMP/body.md"
+      - name: Fail the run when the tests failed
+        if: steps.tests.outcome == 'failure'
+        run: exit 1

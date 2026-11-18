@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest'
 import { vueCrashing } from '../../src/configs/generated/vue-compat.ts'
 import plugin from '../../src/index.ts'
 import { eslintVersions } from '../helpers/eslint-versions.ts'
+import { scaled } from '../helpers/time-scale.ts'
 import { toCRLF, vue } from '../helpers/vue.ts'
 
 const linters = { eslint9: Linter9 as unknown as typeof Linter, eslint10: Linter }
@@ -78,5 +79,5 @@ describe.each(eslintVersions)('no vue rule throws on Pug ($label)', (v) => {
     }
     expect([...crashing].sort()).toEqual(Object.keys(vueCrashing).sort())
     // One rule-by-rule bisection per throwing fixture: seconds per fixture, so it outgrows the default 5s.
-  }, 60_000)
+  }, scaled(60_000))
 })
