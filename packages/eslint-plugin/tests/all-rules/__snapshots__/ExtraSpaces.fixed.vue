@@ -2,7 +2,7 @@
 .wrap
   img(src="/a.png"    alt="a"   width="10")
   input(v-model="name" type="text")
-  p(  class="x"  )   Hello   {{ name }}
+  p(class="x")   Hello   {{ name }}
 </template>
 
 <script setup>

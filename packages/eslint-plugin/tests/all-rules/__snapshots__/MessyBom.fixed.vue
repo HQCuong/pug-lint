@@ -4,7 +4,7 @@ div.page#root(class="a b")
     h1(class='title'   :title="t") {{ t }}
   MyButton(
     type='button' :disabled="busy"
-    @click="go" )/
+    @click="go")/
   ul
     li(v-for="x in xs"  :key="x")  {{ x }}
   p.

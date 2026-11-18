@@ -12,7 +12,7 @@ div
   a(href="/x"
     title="y"
   ) Four
-  button( type="button" @click="go" ) Five
+  button(type="button" @click="go") Five
 </template>
 
 <script setup>
