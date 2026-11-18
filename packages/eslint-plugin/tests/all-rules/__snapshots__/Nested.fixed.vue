@@ -1,8 +1,10 @@
 <template lang="pug">
 ul.menu
-  li.item(v-for="i in items"
+  li.item(
+    v-for="i in items"
     :key="i.id"
-    :class="{ active: i.on }")
+    :class="{ active: i.on }"
+  )
     a(:href="i.url") {{ i.label }}
     ul.sub
       li

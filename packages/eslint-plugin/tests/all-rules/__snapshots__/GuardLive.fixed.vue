@@ -1,5 +1,7 @@
 <template lang="pug">
 div
-  a(href="/x"
-    title="y") Link
+  a(
+    href="/x"
+    title="y"
+  ) Link
 </template>

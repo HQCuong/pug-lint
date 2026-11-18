@@ -4,12 +4,16 @@ div
     href="/x"
     title="y"
   ) One
-  a(href="/x"
-    title="y") Two
   a(
     href="/x"
-    title="y") Three
-  a(href="/x"
+    title="y"
+  ) Two
+  a(
+    href="/x"
+    title="y"
+  ) Three
+  a(
+    href="/x"
     title="y"
   ) Four
   button(type="button" @click="go") Five
