@@ -1,2 +1,5 @@
+# Source and generated files are LF on every platform (so `compat:check`/`docs:check` compare equal under core.autocrlf);
+# fixtures and snapshots below stay byte-exact.
+* text=auto eol=lf
 packages/*/tests/fixtures/** -text
 packages/*/tests/all-rules/__snapshots__/** -text

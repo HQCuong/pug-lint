@@ -23,28 +23,49 @@ jobs:
           node-version: '24'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
       - name: Install latest eslint, eslint-plugin-vue, vue-eslint-parser
+        id: install
+        continue-on-error: true
         run: pnpm -C packages/eslint-plugin add -D eslint@latest eslint-plugin-vue@latest vue-eslint-parser@latest
+      - name: Build
+        id: build
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        run: pnpm build
       - name: Tests
         id: tests
+        if: steps.build.outcome == 'success'
         continue-on-error: true
         run: pnpm test
       - name: Regenerate the compat table
+        id: compat
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
         run: pnpm -C packages/eslint-plugin compat
       - name: Collect the drift
         id: drift
+        if: steps.compat.outcome == 'success'
         run: |
           git diff -- packages/eslint-plugin/src/configs/generated/vue-compat.ts > "$RUNNER_TEMP/vue-compat.diff"
           if [ -s "$RUNNER_TEMP/vue-compat.diff" ]; then echo "changed=true" >> "$GITHUB_OUTPUT"; fi
-      - name: Open an issue on failure or drift
-        if: steps.tests.outcome == 'failure' || steps.drift.outputs.changed == 'true'
+      - name: Report problems in an issue
+        id: report
+        if: >-
+          steps.install.outcome == 'failure' || steps.build.outcome == 'failure' ||
+          steps.tests.outcome == 'failure' || steps.compat.outcome == 'failure' ||
+          steps.drift.outputs.changed == 'true'
         run: |
+          problems=()
+          [ "${{ steps.install.outcome }}" = failure ] && problems+=("install failed")
+          [ "${{ steps.build.outcome }}" = failure ] && problems+=("build failed")
+          [ "${{ steps.tests.outcome }}" = failure ] && problems+=("tests failed")
+          [ "${{ steps.compat.outcome }}" = failure ] && problems+=("compat generation failed")
+          [ "${{ steps.drift.outputs.changed }}" = true ] && problems+=("compat drift")
+          summary=$(IFS=,; echo "${problems[*]}" | sed 's/,/, /g')
           {
             echo "Weekly compat run against the latest eslint, eslint-plugin-vue and vue-eslint-parser: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
             echo
-            echo "- tests: ${{ steps.tests.outcome }}"
-            echo "- vue-compat.ts changed: ${{ steps.drift.outputs.changed == 'true' }}"
+            echo "Problems: $summary"
             if [ -s "$RUNNER_TEMP/vue-compat.diff" ]; then
               echo
               echo '```diff'
@@ -52,7 +73,15 @@ jobs:
               echo '```'
             fi
           } > "$RUNNER_TEMP/body.md"
-          gh issue create --title "Compat check failed against latest ESLint/Vue tooling ($(date -u +%F))" --body-file "$RUNNER_TEMP/body.md"
-      - name: Fail the run when the tests failed
-        if: steps.tests.outcome == 'failure'
+          gh label create compat-latest --color BFD4F2 --description "Weekly compat check" 2>/dev/null || true
+          existing=$(gh issue list --label compat-latest --state open --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body-file "$RUNNER_TEMP/body.md"
+          else
+            gh issue create --label compat-latest --title "Compat check against latest ESLint/Vue tooling: $summary" --body-file "$RUNNER_TEMP/body.md"
+          fi
+      - name: Fail the run when something failed
+        if: >-
+          steps.install.outcome == 'failure' || steps.build.outcome == 'failure' ||
+          steps.tests.outcome == 'failure' || steps.compat.outcome == 'failure'
         run: exit 1

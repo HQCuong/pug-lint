@@ -77,7 +77,11 @@ describe.each(eslintVersions)('no vue rule throws on Pug ($label)', (v) => {
         }
       }
     }
-    expect([...crashing].sort()).toEqual(Object.keys(vueCrashing).sort())
+    // The committed list comes from the current eslint-plugin-vue; the floor job's older release may crash on
+    // a different set, so there only "nothing outside the base config's reach crashes" is kept (the test above).
+    if (process.env.PUG_LINT_SKIP_COMPAT_DRIFT !== '1') {
+      expect([...crashing].sort()).toEqual(Object.keys(vueCrashing).sort())
+    }
     // One rule-by-rule bisection per throwing fixture: seconds per fixture, so it outgrows the default 5s.
   }, scaled(60_000))
 })

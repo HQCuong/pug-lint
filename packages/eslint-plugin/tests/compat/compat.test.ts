@@ -6,6 +6,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { vueCrashing, vueSuppressed } from '../../src/configs/generated/vue-compat.ts'
 import { classifyRule, compatFixtures, generate, htmlTwin, twinProblems } from '../../tools/compat/run.ts'
 import type { CompatFixture, Generated } from '../../tools/compat/run.ts'
+import { scaled } from '../helpers/time-scale.ts'
 import { vue } from '../helpers/vue.ts'
 
 // Rules the spike found must not run inside Pug templates (spec brief). `mustache-interpolation-spacing`
@@ -115,7 +116,7 @@ describe('generated table', () => {
     let generated: Generated
     beforeAll(() => {
       generated = generate()
-    }, 600_000)
+    }, scaled(600_000))
 
     it.skipIf(process.env.PUG_LINT_SKIP_COMPAT_DRIFT === '1')('equals the committed files (run `pnpm compat`)', () => {
       expect(generated.source).toBe(readFileSync(new URL('../../src/configs/generated/vue-compat.ts', import.meta.url), 'utf8'))

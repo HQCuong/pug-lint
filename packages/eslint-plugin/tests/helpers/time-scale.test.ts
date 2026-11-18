@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { timeScale } from './time-scale.ts'
+import { scaled, timeScale } from './time-scale.ts'
 
 describe('timeScale', () => {
+  it('scales the configured test timeout', ({ task }) => {
+    expect(task.timeout).toBe(scaled(5000))
+  })
   it('defaults to 1', () => {
     expect(timeScale(undefined)).toBe(1)
     expect(timeScale('')).toBe(1)
