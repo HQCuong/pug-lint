@@ -1,7 +1,9 @@
 name: CI
 
+# Pushes to main and pull requests: a PR branch runs once (as the pull_request event), not twice.
 on:
   push:
+    branches: [main]
   pull_request:
 
 concurrency:
