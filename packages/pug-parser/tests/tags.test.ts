@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Comment, PugDocument, PugNode, Range, Tag } from '../src/ast.ts'
-import { parsePug } from '../src/index.ts'
+import { fingerprint, parsePug } from '../src/index.ts'
 import { assertInvariants, at, toCRLF } from './helpers.ts'
 
 const slice = (text: string, [s, e]: Range): string => text.slice(s, e)
@@ -21,10 +21,7 @@ function asComment(node: PugNode | undefined): Comment {
   return node
 }
 
-/**
- * Tree shape as a string, independent of offsets.
- * Stand-in for Task 6's `fingerprint` (not written yet) where the brief compares fingerprints.
- */
+/** Tree shape as a string (tag names as written, shorthands, comment kind), independent of offsets. */
 function shape(nodes: readonly PugNode[]): string {
   return nodes
     .map((n) => {
@@ -224,7 +221,7 @@ describe('parsePug: options, lines, errors', () => {
     expect(doc.errors).toEqual([])
     expect(doc.children).toHaveLength(1)
     expect(asTag(doc.children[0]).name?.value).toBe('div')
-    expect(shape(doc.children)).toBe(shape(parse('div\n  p').children))
+    expect(fingerprint(doc)).toBe(fingerprint(parse('div\n  p')))
     expect(doc.indentUnit).toBe('  ')
   })
 

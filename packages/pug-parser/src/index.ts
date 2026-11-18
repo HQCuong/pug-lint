@@ -1,3 +1,5 @@
 export { parsePug } from './parser.ts'
 export type { ParseOptions } from './parser.ts'
+export { fingerprint } from './fingerprint.ts'
+export { walk } from './walk.ts'
 export type * from './ast.ts'
