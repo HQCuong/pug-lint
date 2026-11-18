@@ -6,7 +6,7 @@
     type="button"
     :disabled="busy"
     @click="go"
-  )/
+  )
   ul
     li(v-for="x in xs" :key="x")  {{ x }}
   p.
