@@ -75,5 +75,6 @@ describe.each(eslintVersions)('no vue rule throws on Pug ($label)', (v) => {
       }
     }
     expect([...crashing].sort()).toEqual(Object.keys(vueCrashing).sort())
-  })
+    // One rule-by-rule bisection per throwing fixture: seconds per fixture, so it outgrows the default 5s.
+  }, 60_000)
 })
