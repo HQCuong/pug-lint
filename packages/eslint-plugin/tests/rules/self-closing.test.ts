@@ -15,6 +15,7 @@ runRule('self-closing', rule, {
     { name: 'a mixin call is not a tag', pug: '+foo' },
     { name: 'an error on the tag line leaves it alone', pug: 'img(a="1" b="x)/' },
     { name: 'an unclosed block is an error region and is left alone', pug: 'p\n  img(x/' },
+    { name: 'a dot after `/` is a parse error (Pug cannot compile it) and is left alone', pug: 'p/.' },
     { name: 'tab-indented', pug: 'section\n\tdiv\n\t\timg' },
     { name: 'always-components: a component with inline text', options: components, pug: 'MyComp x' },
     { name: 'always-components: a component with children', options: components, pug: 'my-comp\n  p' },
@@ -49,7 +50,6 @@ runRule('self-closing', rule, {
     },
     { name: 'trailing whitespace after `/` is reported without a fix', pug: 'p/ \na', output: null, errors: [unexpected(2, 2)] },
     { name: 'code after `/` is reported without a fix', pug: 'p/= x', output: null, errors: [unexpected(2, 2)] },
-    { name: 'a dot after `/` is reported without a fix', pug: 'p/.', output: null, errors: [unexpected(2, 2)] },
     { name: 'nested content is reported without a fix', pug: 'p/\n  a', output: null, errors: [unexpected(2, 2)] },
     {
       name: 'tab-indented',

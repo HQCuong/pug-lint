@@ -1,6 +1,7 @@
 // Oracle cases for tab/space mixes: pug-lexer accepts or rejects ("you can use tabs or spaces but
 // not both") each source exactly when the parser does. Node lines and raw-block lines (text blocks,
-// comments, code blocks, filters) in both directions, with raw lines shallower than the block's first.
+// comments, code blocks, filters) in both directions, with raw lines shallower than the block's first;
+// whitespace-only first and last lines; the whitespace before a filter's inline text.
 import { describe, expect, it } from 'vitest'
 import { parsePug } from '../../src/index.ts'
 import { officialSkeleton } from './skeleton.ts'
@@ -22,12 +23,22 @@ const cases: [name: string, src: string][] = [
   ['a shallower code-block line, mixed', 'div\n\t-\n\t\t\tvar a = 1\n    var b = 2\n\tp x'],
   ['a shallower filter line, mixed', 'div\n  :cdata\n      a\n\t\tb\n  p x'],
   ['a mixed line with a tab-indented base', 'div\n\tp\n\t\tspan\n\t  b'],
+  ['a whitespace-only last line of tabs in a space file', 'div\n  p\n\t'],
+  ['a whitespace-only last line of spaces in a space file', 'div\n  p\n  '],
+  ['a whitespace-only last line of spaces in a tab file', 'div\n\tp\n  '],
+  ['a whitespace-only last line before any indentation', 'div\n\t'],
+  ['a whitespace-only last line matching no level', 'div\n    p\n  '],
+  ['a whitespace-only last line at an enclosing level', 'div\n  p\n    a\n  '],
+  ['a whitespace-only last line deeper than the last', 'div\n  p\n      '],
+  ['a leading tab', '\t\ndiv'],
+  ['a leading space', '  \ndiv'],
+  ['a filter and a tab before its text', ':cdata\tx'],
 ]
 
 describe('tab/space mixes against pug-lexer', () => {
   it.each(cases)('%s', (_name, src) => {
     const official = officialSkeleton(src).ok
-    const ours = parsePug(src).errors.filter((e) => e.code === 'inconsistent-indentation').length === 0
+    const ours = parsePug(src).errors.length === 0
     expect({ src, ours }).toEqual({ src, ours: official })
   })
 

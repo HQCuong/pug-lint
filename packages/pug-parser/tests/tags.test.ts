@@ -233,6 +233,36 @@ describe('parsePug: options, lines, errors', () => {
     expect(doc.children.map((c) => asTag(c).name?.value)).toEqual(['div', 'span'])
   })
 
+  it('reports any line dedented below the root base: Vue de-indents by the smallest indentation', () => {
+    for (const src of ['  div(:a=`{\nx: 1\n}`)', '  div(\na=1)', '  div(\n    a=1\n )\n  p']) {
+      const doc = parse(src)
+      expect(doc.errors.length, src).toBeGreaterThan(0)
+      expect(doc.errors.every((e) => e.code === 'inconsistent-indentation'), src).toBe(true)
+    }
+    expect(parse('  div(\n    a=1\n  )\n  p').errors).toEqual([])
+  })
+
+  it('reports a blank first line that keeps a tab after the de-indent (Pug rejects a leading tab)', () => {
+    expect(parse('\t\ndiv').errors.map((e) => e.code)).toEqual(['inconsistent-indentation'])
+    expect(parse(' \t\n div').errors.map((e) => e.code)).toEqual(['inconsistent-indentation'])
+    for (const ok of ['  \ndiv', '\t\n\tdiv', '\n\tdiv', '\t']) expect(parse(ok).errors, JSON.stringify(ok)).toEqual([])
+  })
+
+  it('reports a whitespace-only last line that keeps a mixed indent after the de-indent', () => {
+    // Vue cuts one character (the base's length) from '  ': Pug then reads ' ' in a tab file.
+    const { errors } = parse('\tdiv\n\t\tp\n  ')
+    expect(errors.length).toBeGreaterThan(0)
+    expect(errors.every((e) => e.code === 'inconsistent-indentation')).toBe(true)
+    expect(parse('\tdiv\n\t\tp\n\t').errors).toEqual([])
+  })
+
+  it('reports lines nested under a self-closing tag (Pug cannot compile them), not inline text', () => {
+    const src = 'div/\n  p'
+    expect(parse(src).errors).toMatchObject([{ code: 'unsupported-syntax', offset: at(src, 'p')[0] }])
+    expect(parse('img/ text').errors).toEqual([])
+    expect(parse('img/.\n  x').errors.map((e) => e.code)).toContain('unsupported-syntax')
+  })
+
   it('stops a class name at "/"', () => {
     const src = '.w-1/2'
     const doc = parse(src)

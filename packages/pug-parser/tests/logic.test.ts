@@ -88,7 +88,8 @@ describe('control flow', () => {
   it('reads "extend" as extends (oracle)', () => {
     const src = 'extend layout\nextends-x'
     const doc = parse(src)
-    expect(doc.errors).toEqual([])
+    // `extends-x` is a keyword error in Pug, still read as a tag.
+    expect(doc.errors).toMatchObject([{ code: 'unsupported-syntax', offset: at(src, 'extends-x')[0] }])
     const ext = asControl(doc.children[0])
     expect(ext.keyword).toBe('extends')
     expect(slice(src, ext.head)).toBe('layout')
@@ -98,9 +99,13 @@ describe('control flow', () => {
   it('reads keyword-like names followed by other characters as tags', () => {
     const src = 'default-slot\nblock.x\ninclude-me\nif-ok\niffy'
     const doc = parse(src)
-    expect(doc.errors).toEqual([])
     expect(doc.children.map((c) => asTag(c).name?.value)).toEqual(['default-slot', 'block', 'include-me', 'if-ok', 'iffy'])
     expect(asTag(doc.children[1]).shorthands.map((s) => s.value)).toEqual(['x'])
+    // pug-lexer reads `default`, `include`, … before a non-word character as the keyword (oracle).
+    expect(doc.errors).toMatchObject([
+      { code: 'unsupported-syntax', offset: at(src, 'default-slot')[0] },
+      { code: 'unsupported-syntax', offset: at(src, 'include-me')[0] },
+    ])
   })
 
   it('does not take a word-only keyword followed by "(" as control', () => {

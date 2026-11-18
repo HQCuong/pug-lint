@@ -29,13 +29,18 @@ const isDeeper = (inner: string, outer: string): boolean => inner.length > outer
 const PAREN_KEYWORDS = new Set(['if', 'unless', 'while', 'each', 'for', 'case', 'when', 'else'])
 const WORD_KEYWORDS = new Set(['block', 'default', 'include', 'extends', 'extend', 'yield', 'mixin', 'append', 'prepend', 'doctype'])
 const KEYWORD = /[a-z]+/y
-const ELSE_IF = /^[ \t]+if(?=[ \t(:]|$)/
+const ELSE_IF = /^ if(?=[ \t(:]|$)/   // as in pug-lexer: one space
+// Keywords pug-lexer reads before a tab; the others need a space (`/^each +/`).
+const TAB_KEYWORDS = new Set(['if', 'unless', 'else', 'else if', 'default', 'yield', 'doctype'])
 // Keywords that may be followed directly by ':'. `when`/`default` take a block
 // expansion; `include:filter` names a filter; on a conditional Pug rejects it.
 const COLON_KEYWORDS = new Set(['when', 'default', 'include', 'if', 'unless', 'else'])
 // Keywords whose head is a JS expression (or nothing) where Pug rejects a block expansion.
 const NO_EXPANSION = new Set<ControlKeyword>(['if', 'unless', 'else', 'else if', 'while', 'case', 'each', 'for'])
 const FILTER_HEAD = /:[\w-]+(?::[\w-]+)*/y
+// pug-lexer reads these as keywords before any non-word character (`/^case\b/`): `default-slot`,
+// `for-item`, `case.x` are keyword errors in Pug, not tags; and `(` after them is an error too.
+const BOUNDARY_KEYWORDS = new Set(['extends', 'extend', 'include', 'case', 'when', 'default', 'while', 'each', 'for', 'else'])
 
 /** A tag or mixin call and the nodes of its block expansion chain, outermost first. */
 type Chain = (Tag | MixinCall)[]
@@ -117,6 +122,9 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
     if (top && indentUnit === null) indentUnit = indent.slice(top.indent.length)
     for (let k = stack.length - 1; k >= 0; k--) {
       const node = stack[k]!.node
+      if (node?.type === 'Tag' && node.selfClose) {
+        errors.push({ code: 'unsupported-syntax', message: 'A self-closing tag cannot have nested lines', offset })
+      }
       if (isParent(node)) return node.children
     }
     return children
@@ -229,14 +237,14 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
 
   /**
    * Start of the block expansion child after the ':' at `colon` on raw[index]:
-   * Pug's form is ':' and one or more spaces. Otherwise reported as
+   * Pug's form is ':' and one or more spaces (a tab after them is an error). Otherwise reported as
    * unsupported and -1.
    */
   function expansionStart(colon: number, index: number): number {
     const end = raw[index]!.range[1]
     let s = colon + 1
-    while (s < end && (src[s] === ' ' || src[s] === '\t')) s++
-    if (src[colon + 1] === ' ' && s < end) return s
+    while (s < end && src[s] === ' ') s++   // as in pug-lexer: spaces only, no tab
+    if (src[colon + 1] === ' ' && s < end && src[s] !== '\t') return s
     errors.push(unsupported(src, colon, end))
     return -1
   }
@@ -261,6 +269,10 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
         errors.push(unsupported(src, s, lineEnd))
         break
       }
+      const word = matchKeyword(s)
+      if (word && BOUNDARY_KEYWORDS.has(word) && !/\w/.test(src[s + word.length] ?? 'x')) {
+        errors.push({ code: 'unsupported-syntax', message: `Pug reads "${word}" here as a keyword, not a tag name`, offset: s })
+      }
       const one = parseTag(s, last)
       if (!one.node) break
       const prev = chain[chain.length - 1]
@@ -278,10 +290,15 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
     return { chain, last }
   }
 
+  /** The lowercase word at `start`, or null. */
+  function matchKeyword(start: number): string | null {
+    KEYWORD.lastIndex = start
+    return KEYWORD.exec(src)?.[0] ?? null
+  }
+
   /** The control keyword starting at `start` (in a line ending at `end`), or null when there is none. */
   function keywordAt(start: number, end: number): string | null {
-    KEYWORD.lastIndex = start
-    const word = KEYWORD.exec(src)?.[0]
+    const word = matchKeyword(start)
     if (!word || !(PAREN_KEYWORDS.has(word) || WORD_KEYWORDS.has(word))) return null
     const c = start + word.length < end ? src[start + word.length] : ''
     const follows = c === '' || c === ' ' || c === '\t' || (c === '(' && PAREN_KEYWORDS.has(word))
@@ -312,10 +329,18 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
       }
     }
     const node: Control = { type: 'Control', keyword, range: [start, end], head: trimmed(after, end), children: [] }
+    if (src[after] === '\t' && !TAB_KEYWORDS.has(keyword)) {
+      errors.push({ code: 'unsupported-syntax', message: `A tab cannot follow "${word}"`, offset: after })
+    }
+    // pug-lexer takes `(` after only `if`, `unless` and `else if`.
+    const paren = src[after] === '(' && keyword !== 'if' && keyword !== 'unless' && keyword !== 'else if'
+    if (paren) errors.push({ code: 'unsupported-syntax', message: `"(" cannot follow "${word}" directly`, offset: after })
     if (NO_EXPANSION.has(keyword)) {
       const bad = topLevelColon(after, end, true)
       if (bad >= 0) {
         errors.push({ code: 'unsupported-syntax', message: `Block expansion is not allowed after "${keyword}"`, offset: bad })
+      } else if (keyword === 'else' && !paren && node.head[0] < node.head[1]) {
+        errors.push({ code: 'unsupported-syntax', message: '"else" cannot have a condition', offset: node.head[0] })
       }
     }
     const colon = keyword === 'when' || keyword === 'default' ? topLevelColon(after, end) : -1
@@ -365,7 +390,7 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
         if (inline.node) tailChildren.push(inline.node)
       } else if (isNode && (src[pos] === '=' || src.startsWith('!=', pos))) {
         tailChildren.push(codeNode(src, pos, end))
-      } else if (isNode && !mixin && src[pos] === '.' && /^[ \t]*$/.test(src.slice(pos + 1, end))) {
+      } else if (isNode && !mixin && !head.selfClose && src[pos] === '.' && /^[ \t]*$/.test(src.slice(pos + 1, end))) {
         dot = [pos, pos + 1]
       } else if (isNode && !mixin && !head.selfClose && src[pos] === ':') {
         colon = pos
@@ -418,7 +443,7 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
     const end = raw[last]!.range[1]
     const children: Text[] = []
     if (pos < end) {
-      if (src[pos] === ' ' || src[pos] === '\t') {
+      if (src[pos] === ' ') {   // as in pug-lexer: a tab does not start the inline text
         const [s, e] = trimmed(pos, end)
         if (s < e) children.push(rawText('inline', [s, e]))
       } else {
@@ -564,6 +589,40 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
   }
 
   markRegions()
+
+  const rootIndent = base as string | null   // assigned in attach(), which TypeScript does not follow
+  // pug-lexer reads a whitespace-only last line without an EOL as an indentation change: it must
+  // use the indent character and, when it dedents, match an enclosing level.
+  const bottom = raw[raw.length - 1]
+  if (rootIndent !== null && bottom?.blank && bottom.eol === '' && raw.length > 1) {
+    // Vue's de-indent cuts the base's length from it, whatever its characters.
+    const rel = indentOf(bottom).slice(rootIndent.length)
+    const ws = rootIndent + rel
+    if (rel !== '') {
+      if ([...rel].some((c) => c !== (indentChar ?? rel[0]))) {
+        inconsistent(bottom.indent[1], 'Invalid indentation, you can use tabs or spaces but not both')
+      }
+      let k = stack.length
+      while (k > 0 && !isDeeper(ws, stack[k - 1]!.indent)) k--
+      if (k < stack.length && stack[k]!.indent !== ws) {
+        inconsistent(bottom.indent[1], 'Line does not match the indentation of any enclosing block')
+      }
+    }
+  }
+  // Pug rejects a document whose first character is a tab: a blank first line keeps one after the de-indent.
+  const top = raw[0]
+  if (rootIndent !== null && top?.blank && text.slice(top.range[0], top.range[1]).slice(rootIndent.length).startsWith('\t')) {
+    inconsistent(top.range[0], 'A Pug template cannot start with a tab')
+  }
+  // Vue de-indents a Pug template by its smallest indentation; a line indented less than the base
+  // (inside an attribute block or a string, say) would leave the root lines indented, which Pug rejects.
+  if (rootIndent) {
+    for (const line of lines) {
+      if (line.kind !== 'blank' && line.kind !== 'node' && !text.slice(line.indent[0], line.indent[1]).startsWith(rootIndent)) {
+        inconsistent(line.indent[1], 'Line is dedented below the template\'s base indentation')
+      }
+    }
+  }
 
   const firstEol = raw.find((l) => l.eol !== '')?.eol
   return {
