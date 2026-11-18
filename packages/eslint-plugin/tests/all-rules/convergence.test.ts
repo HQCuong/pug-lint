@@ -10,6 +10,7 @@ import { findPugTemplateRanges, templateFingerprint } from '../../src/shared/tem
 import type { EslintVersion } from '../helpers/eslint-versions.ts'
 import { eslintVersions } from '../helpers/eslint-versions.ts'
 import { lintText } from '../helpers/lint.ts'
+import { pugTemplateError } from '../helpers/pug-oracle.ts'
 import { scaled } from '../helpers/time-scale.ts'
 import { vue } from '../helpers/vue.ts'
 import { allRulesConfig } from './config.ts'
@@ -43,14 +44,20 @@ const TIME_BUDGET_MS = scaled(2000)
 
 const ours = (ruleId: string | null): boolean => ruleId?.startsWith('vue-pug/') ?? false
 
-/** Fixes `text` with `config`; fails on a guard drop of a `vue-pug/*` fix. */
-async function fix(v: EslintVersion, name: string, text: string, config?: Linter.Config[]): Promise<string> {
+/**
+ * Fixes `text` with `config` (default: the all-rules config plus `rules`); fails on a guard drop of a
+ * `vue-pug/*` fix and when the real Pug does not compile the fixed template.
+ */
+async function fix(
+  v: EslintVersion, name: string, text: string, config?: Linter.Config[], rules: Linter.RulesRecord = {},
+): Promise<string> {
   const drops: string[] = []
-  const used = config ?? allRulesConfig((m, reason) => {
+  const used = config ?? [...allRulesConfig((m, reason) => {
     if (ours(m.ruleId)) drops.push(`${m.ruleId}@${m.line}: ${reason}`)
-  })
+  }), { files: ['**/*.vue'], rules }]
   const { output } = await lintText(v, text, used, { fix: true, filename: `${name}.vue` })
   expect(drops).toEqual([])
+  expect(pugTemplateError(output)).toBeNull()
   return output
 }
 
@@ -156,6 +163,39 @@ describe.each(eslintVersions)('convergence ($label)', (v) => {
       expect(outsideTemplate(fixed)).toEqual(outsideTemplate(text))
       // Not vacuous: a non-canonical template was rewritten.
       if (text !== snapshot(name)) expect(fixed).not.toBe(text)
+    })
+  })
+
+  // vue-pug/indent with tabs, from a space file whose raw blocks have lines shallower than their
+  // first: the fix must not mix tabs and spaces (Pug rejects that), and noise converges back.
+  describe('tab indentation', () => {
+    const spaces = vue([
+      'div',
+      '  //-',
+      '      an old block',
+      '    shallower line',
+      '  p.',
+      '      deep first line',
+      '    shallower text',
+      '  -',
+      '      var a = 1',
+      '    var b = 2',
+      '  :cdata',
+      '      kept',
+      '    shallower',
+      '  p(class="x") {{ a }}',
+    ].join('\n'), '<script setup>\nconst a = 1\n</script>\n')
+    const tab: Linter.RulesRecord = { 'vue-pug/indent': ['warn', 'tab'] }
+
+    it('fixes every whitespace mutation of its fixed output back to it', async () => {
+      const fixed = await fix(v, 'TabIndent', spaces, undefined, tab)
+      expect(fixed).not.toBe(spaces)
+      expect(fixed).not.toMatch(/^\t* +\S/m)
+      expect(await fix(v, 'TabIndent', fixed, undefined, tab)).toBe(fixed)
+      for (const seed of SEEDS) {
+        const mutated = mutateWhitespace(fixed, seed)
+        expect({ seed, output: await fix(v, 'TabIndent', mutated, undefined, tab) }).toEqual({ seed, output: fixed })
+      }
     })
   })
 

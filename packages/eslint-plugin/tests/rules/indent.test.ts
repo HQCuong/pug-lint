@@ -7,6 +7,7 @@ import { guardMessages } from '../../src/processor/guard.ts'
 import rule from '../../src/rules/indent.ts'
 import { eslintVersions } from '../helpers/eslint-versions.ts'
 import { lintText } from '../helpers/lint.ts'
+import { pugTemplateError } from '../helpers/pug-oracle.ts'
 import { runRule } from '../helpers/rule-tester.ts'
 import { scaled } from '../helpers/time-scale.ts'
 import { vue } from '../helpers/vue.ts'
@@ -134,6 +135,32 @@ runRule('indent', rule, {
       errors: [unexpected(4, '4 spaces', '6 spaces')],
     },
     {
+      name: 'spaces to tab: a raw line shallower than its anchor takes the anchor\'s new indentation',
+      pug: 'div\n  //-\n      span old\n    p older\n  p x',
+      options: ['tab'],
+      output: 'div\n\t//-\n\t\tspan old\n\t\tp older\n\tp x',
+      errors: [
+        unexpected(3, '1 tab', '2 spaces'), unexpected(4, '2 tabs', '6 spaces'),
+        unexpected(5, '2 tabs', '4 spaces'), unexpected(6, '1 tab', '2 spaces'),
+      ],
+    },
+    {
+      name: 'tab to spaces: a raw line shallower than its anchor takes the anchor\'s new indentation',
+      pug: 'div\n\t//-\n\t\t\tspan old\n\t\tp older\n\tp x',
+      output: 'div\n  //-\n    span old\n    p older\n  p x',
+      errors: [
+        unexpected(3, '2 spaces', '1 tab'), unexpected(4, '4 spaces', '3 tabs'),
+        unexpected(5, '4 spaces', '2 tabs'), unexpected(6, '2 spaces', '1 tab'),
+      ],
+    },
+    {
+      name: 'spaces to tab: shallower lines of a text block, a code block and a filter',
+      pug: 'div\n  p.\n      a\n    b\n  -\n      var x = 1\n    var y = 2\n  :cdata\n      c\n    d',
+      options: ['tab'],
+      output: 'div\n\tp.\n\t\ta\n\t\tb\n\t-\n\t\tvar x = 1\n\t\tvar y = 2\n\t:cdata\n\t\tc\n\t\td',
+      errors: [3, 4, 5, 6, 7, 8, 9, 10, 11].map((line) => ({ messageId: 'unexpected', line })),
+    },
+    {
       // Rule-level behavior only: in a real run the guard drops every fix in a template with a parse error.
       name: 'line holding a parse error is skipped, its sibling is fixed',
       pug: 'div\n   p(x="1" y=)\n   em',
@@ -194,6 +221,30 @@ describe('indent fixes and the guard', () => {
       const kept = guardMessages(code, messages, (_, reason) => drops.push(reason))
       expect(drops).toEqual([])
       expect(kept.every((m) => m.fix)).toBe(true)
+    })
+  }
+
+  // A raw line shallower than its block's first line, with the indent character changing: the fix
+  // must neither mix tabs and spaces (Pug rejects it) nor be dropped by the guard.
+  const shallow = 'div\n  //-\n      span old\n    p older\n  p.\n      a\n    b\n  p x'
+  const directions: [string, string, unknown[]][] = [
+    ['spaces to tab', shallow, ['tab']],
+    ['tab to spaces', shallow.replace(/^ +/gm, (m) => '\t'.repeat(m.length / 2)), [2]],
+  ]
+  for (const [label, pug, options] of directions) {
+    it(`${label}: the guard keeps the fix and Pug compiles it`, async () => {
+      const v = eslintVersions.at(-1)!
+      const withOptions = config.map((c) => ({ ...c, rules: { 'vue-pug/indent': ['warn', ...options] as Linter.RuleEntry } }))
+      const text = vue(pug)
+      expect(pugTemplateError(text)).toBeNull()
+      const { messages } = await lintText(v, text, withOptions)
+      const drops: DropReason[] = []
+      const kept = guardMessages(text, messages, (_, reason) => drops.push(reason))
+      expect(drops).toEqual([])
+      expect(kept.length).toBeGreaterThan(0)
+      const { output } = await lintText(v, text, withOptions, { fix: true })
+      expect(output).not.toBe(text)
+      expect(pugTemplateError(output)).toBeNull()
     })
   }
 

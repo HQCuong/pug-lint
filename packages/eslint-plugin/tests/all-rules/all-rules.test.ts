@@ -13,6 +13,7 @@ import { createPugRule } from '../../src/utils/create-rule.ts'
 import type { EslintVersion } from '../helpers/eslint-versions.ts'
 import { eslintVersions } from '../helpers/eslint-versions.ts'
 import { lintText } from '../helpers/lint.ts'
+import { pugTemplateError } from '../helpers/pug-oracle.ts'
 import { vue } from '../helpers/vue.ts'
 import { allRulesConfig } from './config.ts'
 
@@ -175,6 +176,10 @@ describe.each(eslintVersions)('all rules ($label)', (v) => {
     if (hasCRLF(text) && !hasBareLF(text)) expect(hasBareLF(output)).toBe(false)
     if (hasBareLF(text) && !hasCRLF(text)) expect(hasCRLF(output)).toBe(false)
     expect(output.startsWith(BOM)).toBe(text.startsWith(BOM))
+
+    // (a') the real Pug compiles the fixed template: no fix broke it.
+    expect(pugTemplateError(text)).toBeNull()
+    expect(pugTemplateError(output)).toBeNull()
 
     // (e) the guard never dropped a fix of ours.
     expect(drops).toEqual([])

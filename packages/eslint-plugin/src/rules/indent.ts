@@ -1,7 +1,8 @@
 // vue-pug/indent: the leading whitespace of every Pug template line. Node, attribute and
 // closing-paren lines get `unit × (depth + baseIndent)`; anchored lines (raw-block lines after the
-// first, continuation lines) keep their offset relative to their anchor line. Lines starting inside
-// a string or template literal are left alone: their whitespace is part of the value.
+// first, continuation lines) keep their offset relative to their anchor line (a raw line shallower
+// than its anchor takes the anchor's indentation when the indent character changes). Lines starting
+// inside a string or template literal are left alone: their whitespace is part of the value.
 // All reports share one fix, so a single surviving report re-indents the whole span.
 import type { Attribute, PugDocument, PugLine, Range } from '@pug-lint/parser'
 import { literalSpans, walk } from '@pug-lint/parser'
@@ -29,12 +30,14 @@ function describe(ws: string, unit: string): string {
  * The new indentation of an anchored line whose anchor goes from `anchorOld` to `anchorNew`, or null
  * to leave it alone. Indentation past the anchor's is kept character for character; otherwise the
  * line is shifted by the anchor's column delta, which needs one whitespace character throughout.
+ * A raw line that can be neither (shallower than its anchor while the indent character changes)
+ * gets the anchor's new indentation: left alone it would mix tabs and spaces, which Pug rejects.
  */
 function shifted(line: PugLine, ws: string, anchorOld: string, anchorNew: string): string | null {
   if (ws.startsWith(anchorOld)) return anchorNew + ws.slice(anchorOld.length)
   const chars = [charOf(ws), charOf(anchorOld), charOf(anchorNew)].filter((c) => c !== '')
   const char = chars[0]
-  if (char === undefined || char === null || chars.some((c) => c !== char)) return null
+  if (char === undefined || char === null || chars.some((c) => c !== char)) return line.kind === 'raw' ? anchorNew : null
   const floor = line.kind === 'raw' ? anchorNew.length : 0
   return char.repeat(Math.max(floor, ws.length + anchorNew.length - anchorOld.length))
 }

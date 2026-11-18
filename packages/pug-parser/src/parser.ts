@@ -64,6 +64,8 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
   const regions: [anchor: number, last: number][] = []
   let base: string | null = null          // indent of the first node line: the root level
   let indentUnit: string | null = null
+  // As in pug-lexer: the first indented line (after the base) fixes the indent character.
+  let indentChar: string | null = null
 
   const indentOf = (l: RawLine): string => text.slice(l.indent[0], l.indent[1])
   const pushLine = (l: RawLine, kind: PugLine['kind'], depth: number, anchor: number | null = null): void => {
@@ -72,6 +74,25 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
   const inconsistent = (offset: number, message: string): void => {
     errors.push({ code: 'inconsistent-indentation', message, offset })
   }
+  /**
+   * Report a tab/space mix where pug-lexer rejects one ("you can use tabs or spaces but not both").
+   * The indent below the base is counted in the document's indent character. A node line must use
+   * only that character. A raw-block line may mix after its first `owner.length` characters of it,
+   * as Pug reads it as text; one that does not get that far ends Pug's block and is read as a node
+   * line. `owner`: the raw block owner's indent, or null for a node line.
+   */
+  function checkIndentChars(l: RawLine, owner: string | null): void {
+    const ws = indentOf(l)
+    if (base === null || !ws.startsWith(base) || ws.length === base.length) return
+    const rel = ws.slice(base.length)
+    indentChar ??= rel[0]!
+    let run = 0
+    while (run < rel.length && rel[run] === indentChar) run++
+    if (run === rel.length) return
+    if (owner !== null && run > owner.length - base.length) return
+    inconsistent(l.indent[1], 'Invalid indentation, you can use tabs or spaces but not both')
+  }
+
   /** Index of the last raw line from raw[from] on that starts at or before `pos`. */
   const lineAt = (pos: number, from: number): number => {
     let k = from
@@ -116,6 +137,7 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
       if (indentOf(l).length <= indent.length) break
       for (let k = next; k < j; k++) pushLine(raw[k]!, 'blank', 0)
       firstRaw ??= lines.length
+      checkIndentChars(l, indent)
       pushLine(l, 'raw', depth + 1, lines.length === firstRaw ? null : firstRaw)
       onLine(l)
       next = j + 1
@@ -486,6 +508,7 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
     }
     const indent = indentOf(line)
     const siblings = attach(indent, line.indent[1])
+    checkIndentChars(line, null)
     const depth = stack.length
     pushLine(line, 'node', depth)
     let node: PugNode | null
