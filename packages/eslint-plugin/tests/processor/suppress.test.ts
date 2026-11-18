@@ -36,6 +36,12 @@ describe('suppressMessages', () => {
     expect(suppressMessages(text, [onEnd], suppress)).toEqual([onEnd])
   })
 
+  it('removes a message at the end of a one-line template (a zero-width Pug end tag sits there)', () => {
+    const oneLine = '<template lang="pug">div(a="b")</template>\n'
+    const atEnd = msg('vue/html-indent', 1, oneLine.indexOf('</template>') + 1)
+    expect(suppressMessages(oneLine, [atEnd], suppress)).toEqual([])
+  })
+
   it('keeps messages without a position', () => {
     const fileLevel: Linter.LintMessage = { ruleId: 'vue/html-indent', message: 'm', severity: 1, line: 0, column: 0 }
     expect(suppressMessages(text, [fileLevel], suppress)).toEqual([fileLevel])

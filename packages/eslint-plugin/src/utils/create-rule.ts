@@ -74,6 +74,8 @@ export function createPugRule<O extends unknown[]>(def: PugRuleDefinition<O>): R
           const text = sourceCode.text
           for (const template of getPugTemplates(text)) {
             let unreliable: Range[] | undefined
+            // A lone CR line break: no EOL a fix could insert is the document's own, so report only.
+            const loneCr = /\r(?!\n)/.test(text.slice(template.doc.range[0], template.doc.range[1]))
             def.check({
               context,
               options: context.options as O,
@@ -81,7 +83,7 @@ export function createPugRule<O extends unknown[]>(def: PugRuleDefinition<O>): R
               text,
               report({ range, messageId, data, fix }) {
                 const loc = { start: sourceCode.getLocFromIndex(range[0]), end: sourceCode.getLocFromIndex(range[1]) }
-                context.report({ loc, messageId, ...(data && { data }), ...(fix && { fix }) })
+                context.report({ loc, messageId, ...(data && { data }), ...(fix && !loneCr && { fix }) })
               },
               inErrorRegion(range) {
                 unreliable ??= errorLineRanges(template.doc)

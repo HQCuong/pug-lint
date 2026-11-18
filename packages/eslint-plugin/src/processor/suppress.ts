@@ -16,7 +16,13 @@ function startOffset(index: LineIndex, message: Linter.LintMessage): number | nu
   }
 }
 
-const inside = (offset: number, ranges: Range[]): boolean => ranges.some(([start, end]) => start <= offset && offset < end)
+/**
+ * True when `offset` lies in a template content range. Its end counts when the content's last line
+ * holds Pug (`<template lang="pug">div</template>`): zero-width Pug end tags sit there; after a line
+ * break the end is the `</template>` line.
+ */
+const inside = (text: string, offset: number, ranges: Range[]): boolean => ranges.some(([start, end]) =>
+  start <= offset && (offset < end || (offset === end && end > start && text[end - 1] !== '\n' && text[end - 1] !== '\r')))
 
 /**
  * True when `[a, b]` (in either order: a misreporting rule can emit an inverted range) overlaps a
@@ -46,6 +52,6 @@ export function suppressMessages(
     if (m.ruleId === null || !suppress.has(m.ruleId)) return true
     if (m.fix && intersects(m.fix.range, ranges)) return false
     const offset = startOffset(index, m)
-    return offset === null || !inside(offset, ranges)
+    return offset === null || !inside(text, offset, ranges)
   })
 }

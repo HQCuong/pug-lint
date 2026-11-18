@@ -131,6 +131,13 @@ runRule('test-strong', strong, {
     { pug: 'p\n  b x', output: 'p\n  strong x', errors: [{ messageId: 'strong', line: 3, column: 3 }] },
     { name: 'same output twice', pug: 'p\n  b x', options: [], output: 'p\n  strong x', errors: [{ messageId: 'strong' }] },
     { name: 'CRLF output', pug: 'p\n  b x', crlf: true, output: 'p\n  strong x', errors: [{ messageId: 'strong', line: 3, column: 3 }] },
+    {
+      // A lone CR line break has no EOL a fix could reproduce: report only.
+      name: 'lone CR: reported without a fix',
+      code: '<template lang="pug">\rp\r  b x\r</template>\r',
+      output: null,
+      errors: [{ messageId: 'strong', line: 3, column: 3 }],
+    },
   ],
 })
 
