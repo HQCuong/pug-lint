@@ -52,6 +52,15 @@ describe('parsePug: attribute blocks', () => {
     for (const c of commas) expect(slice(src, c)).toBe(',')
   })
 
+  it('reads balanced parens inside a key, as pug-lexer does (oracle)', () => {
+    const src = 'template(#cell(name)="{ value }" v-slot:row(a(b))="r" c)'
+    const doc = parse(src)
+    expect(doc.errors).toEqual([])
+    expect(attrs(doc).map((a) => [a.key.raw, a.value?.raw ?? null])).toEqual([
+      ['#cell(name)', '"{ value }"'], ['v-slot:row(a(b))', '"r"'], ['c', null],
+    ])
+  })
+
   it('classifies template literal values', () => {
     const src = 'a(:x=`{ a: b }`)'
     const value = attrs(parse(src))[0]!.value!
@@ -83,6 +92,28 @@ describe('parsePug: attribute blocks', () => {
     const mixed = parse('a(:x="a" + b)')
     expect(attrs(mixed)).toHaveLength(1)
     expect(attrs(mixed)[0]!.value).toMatchObject({ kind: 'expression', raw: '"a" + b', quote: null, inner: null })
+  })
+
+  // Oracle (Task 17): pug-lexer ends a value at whitespace only when the next
+  // character is not a punctuator (or is a quote, ':' or '...') and the value
+  // so far is a complete expression.
+  it.each([
+    ['a(x=b ? c : d :e=1)', ['b ? c : d', '1']],
+    ['a(x=new Date(0))', ['new Date(0)']],
+    ['a(x=typeof y z)', ['typeof y', null]],
+    ['a(x=a (b))', ['a (b)']],
+    ['a(x=a .b)', ['a .b']],
+    ['a(x=y in z)', ['y', null, null]],
+    ['a(x=y instanceof z)', ['y', null, null]],
+    ['a(@click="a" -b)', ['"a" -b']],
+    ['a(x=y\n  /a)', ['y\n  /a']],
+    ['a(x=a ...b)', ['a', null]],
+    ["a(x='a' 'b')", ["'a'", null]],
+    ['a(x=a.new y)', ['a.new', null]],
+  ])('ends the unquoted value in %j as pug-lexer does', (src, values) => {
+    const doc = parse(src)
+    expect(doc.errors).toEqual([])
+    expect(attrs(doc).map((a) => a.value?.raw ?? null)).toEqual(values)
   })
 
   const multiLine = 'a(\n  href="/x"\n  :class="{ active: isActive,\n    big: true }"\n) Link'

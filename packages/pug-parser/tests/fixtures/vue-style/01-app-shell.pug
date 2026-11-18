@@ -1,0 +1,10 @@
+#app
+  header.app-header
+    h1.title {{ title }}
+    nav
+      router-link(to="/") Home
+      router-link(:to="{ name: 'about' }") About
+  main
+    router-view
+  footer.app-footer
+    | &copy; {{ year }} Acme

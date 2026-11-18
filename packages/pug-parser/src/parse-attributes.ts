@@ -1,10 +1,12 @@
 import type { Attribute, AttributeBlock, AttributeValue, MixinCall, PugParseError, Range, Tag } from './ast.ts'
 import { isWhitespace, skipExpression, skipString, skipTemplate } from './expression.ts'
 
-// Binary operators that join an unquoted value across whitespace ("b + c").
-// ':' only joins after a '?' (ternary), so "a(x=b :y=c)" stays two attributes.
-const STARTS_BINARY = new Set(['+', '-', '*', '/', '%', '<', '>', '&', '|', '^', '?', '='])
-const ENDS_BINARY = new Set(['+', '-', '*', '/', '%', '<', '>', '&', '|', '^', '?', ':', '=', '!', '~'])
+// As in pug-lexer (character-parser's isPunctuator): after top-level whitespace
+// a value goes on when the next character is one of these, except ':' and '...'.
+const PUNCTUATORS = new Set(['.', '(', ')', ';', ',', '{', '}', '[', ']', ':', '?', '~', '%', '&', '*', '+', '-', '/', '<', '>', '^', '|', '!', '='])
+// A value ending in one of these (or in a keyword operator) is not a complete expression.
+const ENDS_INCOMPLETE = new Set(['.', ',', '?', ':', '~', '%', '&', '*', '+', '-', '/', '<', '>', '^', '|', '!', '='])
+const ENDS_KEYWORD = /(?:^|[^\w$.])(?:new|typeof|void|delete|await|in|instanceof)$/
 const CLOSERS = new Set([')', ']', '}', ','])
 
 function skipWhitespace(text: string, i: number, end: number): number {
@@ -12,7 +14,11 @@ function skipWhitespace(text: string, i: number, end: number): number {
   return i
 }
 
-/** End of the attribute key at `i` (a quoted key, or chars up to whitespace, '=', '!=', ',', parens, quotes). */
+/**
+ * End of the attribute key at `i`: a quoted key, or chars up to whitespace,
+ * '=', '!=', ',', an unbalanced paren or bracket, or a quote. Balanced `[…]`
+ * and `(…)` belong to the key (`:[arg]`, `#cell(name)`), as in pug-lexer.
+ */
 function skipKey(text: string, i: number, end: number, errors: PugParseError[]): number {
   const c = text[i]
   if (c === '"' || c === "'") {
@@ -25,8 +31,8 @@ function skipKey(text: string, i: number, end: number, errors: PugParseError[]):
   let brackets = 0
   while (j < end) {
     const d = text[j]!
-    if (d === '[') brackets++
-    else if (d === ']' && brackets > 0) brackets--
+    if (d === '[' || d === '(') brackets++
+    else if ((d === ']' || d === ')') && brackets > 0) brackets--
     else if (brackets === 0) {
       if (isWhitespace(d) || '=,()]}\'"`'.includes(d) || (d === '!' && text[j + 1] === '=')) break
     }
@@ -35,20 +41,53 @@ function skipKey(text: string, i: number, end: number, errors: PugParseError[]):
   return j
 }
 
-/** End of an attribute value starting at `i`: the unquoted-value termination rule. */
+/**
+ * Top-level `?` minus top-level `:` in `text[s, e)` (strings and brackets
+ * skipped; `?.` and `??` are not ternaries). `[s, e)` starts at depth 0.
+ */
+function ternaryDelta(text: string, s: number, e: number): number {
+  let delta = 0
+  let depth = 0
+  for (let i = s; i < e; i++) {
+    const c = text[i]
+    if (c === '"' || c === "'" || c === '`') {
+      const j = c === '`' ? skipTemplate(text, i, e).end : skipString(text, i, e)
+      if (j < 0) return delta
+      i = j - 1
+    } else if (c === '(' || c === '[' || c === '{') {
+      depth++
+    } else if (c === ')' || c === ']' || c === '}') {
+      depth = Math.max(0, depth - 1)
+    } else if (depth === 0 && c === '?') {
+      if (text[i + 1] === '?' || (text[i + 1] === '.' && !/[0-9]/.test(text[i + 2] ?? ''))) i++
+      else delta++
+    } else if (depth === 0 && c === ':') {
+      delta--
+    }
+  }
+  return delta
+}
+
+/**
+ * End of an attribute value starting at `i`. As in pug-lexer, top-level
+ * whitespace ends it when the next character is not a punctuator (or is ':' or
+ * '...') and the value so far is a complete expression: no open ternary, not
+ * ending in an operator or a keyword operator (`new`, `typeof`, `in`, …).
+ */
 function skipValue(text: string, i: number, end: number, errors: PugParseError[]): number {
   let p = i
-  let ternary = false
+  let ternaries = 0
   for (;;) {
+    const from = p
     p = skipExpression(text, p, end, { comma: true, whitespace: true }, errors)
+    ternaries += ternaryDelta(text, from, p)
     if (p >= end || !isWhitespace(text[p])) return p
     const q = skipWhitespace(text, p, end)
     if (q >= end || CLOSERS.has(text[q]!)) return p
     const next = text[q]!
-    const prev = text[p - 1]!
-    const startsBinary = STARTS_BINARY.has(next) || (next === '!' && text[q + 1] === '=') || (next === ':' && ternary)
-    if (!startsBinary && !ENDS_BINARY.has(prev)) return p
-    if (next === '?' || prev === '?') ternary = true
+    const complete = ternaries <= 0 && !ENDS_INCOMPLETE.has(text[p - 1]!)
+      && !ENDS_KEYWORD.test(text.slice(Math.max(i, p - 11), p))
+    if (complete && (!PUNCTUATORS.has(next) || next === ':' || text.startsWith('...', q))) return p
     p = q
   }
 }
@@ -232,14 +271,16 @@ export interface MixinHead extends TagHead {
 }
 
 /**
- * The mixin call head starting at the '+' at `start`: `+name`, an optional
- * `(args)` group, then shorthands, attribute blocks and `&attributes(…)` as in
- * a tag head. Null when no name follows the '+'.
+ * The mixin call head starting at the '+' at `start`: `+name` (spaces may
+ * follow the '+'), an optional `(args)` group, then shorthands, attribute
+ * blocks and `&attributes(…)` as in a tag head. Null when no name follows the '+'.
  */
 export function parseMixinHead(src: string, start: number, limit: number): MixinHead | null {
-  const value = matchAt(MIXIN_NAME, src, start + 1)
+  let at = start + 1
+  while (at < limit && (src[at] === ' ' || src[at] === '\t')) at++   // as in pug-lexer: `+ name`
+  const value = matchAt(MIXIN_NAME, src, at)
   if (!value) return null
-  const mixinName = { value, range: [start + 1, start + 1 + value.length] as Range }
+  const mixinName = { value, range: [at, at + value.length] as Range }
   let pos = mixinName.range[1]
   let args: Range | null = null
   const errs: PugParseError[] = []

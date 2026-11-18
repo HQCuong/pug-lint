@@ -1,0 +1,5 @@
+fancy-list(:items="items")
+  template(#item="{ body, username, likes }")
+    .item
+      p {{ body }}
+      p by {{ username }} | {{ likes }} likes

@@ -1,0 +1,5 @@
+  data-table(:rows="rows")
+    template(#cell(name)="{ value }")
+      strong {{ value }}
+    template(v-for="col in columns" #[`header-${col.key}`]="{ label }")
+      em {{ label }}

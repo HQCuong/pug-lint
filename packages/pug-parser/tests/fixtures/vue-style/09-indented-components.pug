@@ -1,0 +1,6 @@
+    my-component(
+      :prop-a="valueA"
+      :prop-b="valueB",
+      @update:model-value="onUpdate"
+    )
+      child-item(v-for="item in items" :key="item.id" :item="item")

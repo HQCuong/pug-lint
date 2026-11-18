@@ -1,0 +1,4 @@
+transition(name="fade" mode="out-in")
+  component(:is="currentView" v-bind="$attrs")
+transition-group(tag="ul" name="list")
+  li(v-for="n in numbers" :key="n") {{ n }}

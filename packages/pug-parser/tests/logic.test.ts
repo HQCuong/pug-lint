@@ -85,6 +85,16 @@ describe('control flow', () => {
     expect(asTag(controls[2]!.children[0]).name?.value).toBe('p')
   })
 
+  it('reads "extend" as extends (oracle)', () => {
+    const src = 'extend layout\nextends-x'
+    const doc = parse(src)
+    expect(doc.errors).toEqual([])
+    const ext = asControl(doc.children[0])
+    expect(ext.keyword).toBe('extends')
+    expect(slice(src, ext.head)).toBe('layout')
+    expect(asTag(doc.children[1]).name?.value).toBe('extends-x')
+  })
+
   it('reads keyword-like names followed by other characters as tags', () => {
     const src = 'default-slot\nblock.x\ninclude-me\nif-ok\niffy'
     const doc = parse(src)
@@ -136,6 +146,22 @@ describe('code', () => {
     expect(asTag(c!.children[0]).name?.value).toBe('p')
   })
 
+  it('reports lines nested under buffered code once and skips them (oracle)', () => {
+    for (const op of ['=', '!=']) {
+      const src = `div\n  ${op} x\n    p a\n      b\n  span`
+      const doc = parse(src)
+      expect(doc.errors).toEqual([
+        { code: 'unsupported-syntax', message: 'Lines cannot be nested under buffered code', offset: at(src, 'p a')[0] },
+      ])
+      const div = asTag(doc.children[0])
+      expect(div.children.map((c) => c.type)).toEqual(['Code', 'Tag'])
+      expect(asCode(div.children[0]).children).toEqual([])
+      expect(doc.lines.map((l) => [l.kind, l.anchor])).toEqual([
+        ['node', null], ['node', null], ['continuation', 1], ['continuation', 1], ['node', null],
+      ])
+    }
+  })
+
   it('attaches code after shorthands and attributes', () => {
     const src = '.card= title\na(href="x")!= y'
     const doc = parse(src)
@@ -179,6 +205,17 @@ describe('mixins', () => {
     expect(as('Text', text!.children[0]).form).toBe('inline')
     expect(asCode(code!.children[0]).buffered).toBe(true)
     expect(bare).toMatchObject({ args: null, shorthands: [], attributeBlocks: [], children: [] })
+  })
+
+  it('reads a mixin call with spaces after "+" (oracle)', () => {
+    const src = '+  list(1)\n  p'
+    const doc = parse(src)
+    expect(doc.errors).toEqual([])
+    const call = asMixin(doc.children[0])
+    expect(call.name).toEqual({ value: 'list', range: at(src, 'list') })
+    expect(call.range).toEqual(at(src, '+  list(1)'))
+    expect(slice(src, call.args!)).toBe('(1)')
+    expect(asTag(call.children[0]).name?.value).toBe('p')
   })
 
   it('reports unclosed mixin arguments without swallowing the next lines', () => {

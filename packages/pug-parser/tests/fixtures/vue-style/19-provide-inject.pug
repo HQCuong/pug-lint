@@ -1,0 +1,3 @@
+keep-alive(:include="cached")
+  router-view(v-slot="{ Component }")
+    component(:is="Component" :key="$route.fullPath")

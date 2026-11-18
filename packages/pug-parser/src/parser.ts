@@ -27,7 +27,7 @@ const isDeeper = (inner: string, outer: string): boolean => inner.length > outer
 // the end of the line; the others only by whitespace or the end of the line.
 // Anything else ("if-ok", "block.x", "default-slot") makes the word a tag name.
 const PAREN_KEYWORDS = new Set(['if', 'unless', 'while', 'each', 'for', 'case', 'when', 'else'])
-const WORD_KEYWORDS = new Set(['block', 'default', 'include', 'extends', 'yield', 'mixin', 'append', 'prepend', 'doctype'])
+const WORD_KEYWORDS = new Set(['block', 'default', 'include', 'extends', 'extend', 'yield', 'mixin', 'append', 'prepend', 'doctype'])
 const KEYWORD = /[a-z]+/y
 const ELSE_IF = /^[ \t]+if(?=[ \t(:]|$)/
 // Keywords that may be followed directly by ':'. `when`/`default` take a block
@@ -280,7 +280,8 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
     const word = keywordAt(start, end)
     if (!word) return null
     let after = start + word.length
-    let keyword = word as ControlKeyword
+    // `extend` is Pug's alias of `extends`.
+    let keyword = (word === 'extend' ? 'extends' : word) as ControlKeyword
     if (word === 'else') {
       const elseIf = ELSE_IF.exec(src.slice(after, end))
       if (elseIf) {
@@ -458,6 +459,21 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
     }
   }
 
+  /**
+   * The lines nested under raw[index], which Pug rejects under `what`: one
+   * error at the first, then all of them form an error-recovery region.
+   * Returns the next raw index.
+   */
+  function rejectNested(index: number, indent: string, depth: number, what: string): number {
+    let reported = false
+    const next = rawBlock(index + 1, indent, depth, (l) => {
+      if (!reported) errors.push({ code: 'unsupported-syntax', message: `Lines cannot be nested under ${what}`, offset: l.indent[1] })
+      reported = true
+    })
+    if (next > index + 1) regions.push([index, next - 1])
+    return next
+  }
+
   let i = 0
   while (i < raw.length) {
     const line = raw[i]!
@@ -482,24 +498,16 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
       i = comment.next
     } else if (first === '|' || first === '<') {
       node = parseTextLine(line)
-      const textLine = i++
       // Pug rejects lines nested under piped text (under literal HTML they are
-      // siblings, which `attach` already does): one error, then a region.
-      if (first === '|') {
-        let reported = false
-        i = rawBlock(i, indent, depth, (l) => {
-          if (!reported) errors.push({ code: 'unsupported-syntax', message: 'Lines cannot be nested under piped text', offset: l.indent[1] })
-          reported = true
-        })
-        if (i > textLine + 1) regions.push([textLine, i - 1])
-      }
+      // siblings, which `attach` already does).
+      i = first === '|' ? rejectNested(i, indent, depth, 'piped text') : i + 1
     } else if (first === '-') {
       const code = parseCodeLine(i, indent, depth)
       node = code.node
       i = code.next
     } else if (first === '=' || src.startsWith('!=', start)) {
       node = codeNode(src, start, line.range[1])
-      i++
+      i = rejectNested(i, indent, depth, 'buffered code')
     } else if (first === ':' && (filter = parseFilter(i))) {
       const filterNode = filter.node
       node = filterNode

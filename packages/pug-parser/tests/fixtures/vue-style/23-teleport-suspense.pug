@@ -1,0 +1,7 @@
+teleport(to="body")
+  .modal(v-if="open")
+    suspense
+      template(#default)
+        async-panel
+      template(#fallback)
+        | Loading...

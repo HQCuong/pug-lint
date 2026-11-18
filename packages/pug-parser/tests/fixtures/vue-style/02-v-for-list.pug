@@ -1,0 +1,8 @@
+ul.todo-list
+  li(
+    v-for="(todo, index) in todos"
+    :key="todo.id"
+    :class="{ done: todo.done }"
+  )
+    input(type="checkbox" v-model="todo.done")
+    span {{ index + 1 }}. {{ todo.text }}

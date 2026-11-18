@@ -1,0 +1,7 @@
+div
+  p(v-if="type === 'A'") A
+  p(v-else-if="type === 'B'") B
+  p(v-else) Not A/B
+  template(v-if="ok")
+    h1 Title
+    p Paragraph
