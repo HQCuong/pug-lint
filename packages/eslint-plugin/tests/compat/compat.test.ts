@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import type { Rule } from 'eslint'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { vueCrashing, vueSuppressed } from '../../src/configs/generated/vue-compat.ts'
-import { classifyRule, compatFixtures, generate, htmlTwin, twinProblems } from '../../tools/compat/run.ts'
+import { classifyRule, compatFixtures, fixSafetyFixtures, generate, htmlTwin, pugCompiles, twinProblems } from '../../tools/compat/run.ts'
 import type { CompatFixture, Generated } from '../../tools/compat/run.ts'
 import { scaled } from '../helpers/time-scale.ts'
 import { vue } from '../helpers/vue.ts'
@@ -74,11 +74,21 @@ describe('classifyRule', () => {
     }),
   })
 
-  it('a fix that our parser accepts but pug cannot compile is fix-unsafe', () => {
-    // `title=1 +` is an expression value to our parser (same structure), a JS syntax error to pug.
-    const rule = reportsT((range) => ({ fix: (fixer: Rule.RuleFixer) => fixer.replaceTextRange(range, '1 +') }))
-    const verdict = classifyRule('vue/test-pug-compile', [[]], { rules: { 'test-pug-compile': rule }, fixtures: [fixture()] })
+  it('a kept fix whose template pug cannot compile is fix-unsafe', () => {
+    // The guard keeps `"t"` → `"u"` (a string value), but pug cannot compile the template: its
+    // `include` needs a `filename` option. The HTML twin is written by hand for the same reason.
+    const script = '<script>\nexport default {}\n</script>\n'
+    const text = vue('div\n  a(title="t") x\n  include part.pug', script)
+    const twin = `<template>\n<div><a title="t">x</a></div>\n</template>\n${script}`
+    const rule = reportsT((range) => ({ fix: (fixer: Rule.RuleFixer) => fixer.replaceTextRange(range, '"u"') }))
+    const verdict = classifyRule('vue/test-pug-compile', [[]], { rules: { 'test-pug-compile': rule }, fixtures: [{ name: 'T.vue', text, twin }] })
     expect(verdict).toMatchObject({ status: 'fix-unsafe', reason: 'T.vue: the fixed template does not compile with pug' })
+  })
+
+  it('a fix that turns a string value into JavaScript is dropped by the guard: fix-unsafe', () => {
+    const rule = reportsT((range) => ({ fix: (fixer: Rule.RuleFixer) => fixer.replaceTextRange(range, '1 +') }))
+    const verdict = classifyRule('vue/test-js-value', [[]], { rules: { 'test-js-value': rule }, fixtures: [fixture()] })
+    expect(verdict).toMatchObject({ status: 'fix-unsafe', reason: 'T.vue: the guard dropped 1 fix(es) or suggestion(s)' })
   })
 
   it('a dropped suggestion (no fix) is fix-unsafe', () => {
@@ -91,6 +101,13 @@ describe('classifyRule', () => {
     expect(verdict).toMatchObject({ status: 'fix-unsafe', reason: 'T.vue: the guard dropped 1 fix(es) or suggestion(s)' })
   })
 
+  it('vue/static-class-names-order is fix-unsafe: it rewrites an unquoted class expression (fix-safety fixture)', () => {
+    expect(classifyRule('vue/static-class-names-order', [[]])).toMatchObject({
+      status: 'fix-unsafe', reason: expect.stringContaining('fix-safety/UnquotedValues.vue: the guard dropped'),
+    })
+    expect(vueSuppressed['vue/static-class-names-order']).toBeDefined()
+  })
+
   it('vue/no-spaces-around-equal-signs-in-attribute is suppressed, in favour of vue-pug/attribute-equals-spacing', () => {
     expect(vueSuppressed['vue/no-spaces-around-equal-signs-in-attribute']).toBeDefined()
   })
@@ -99,6 +116,10 @@ describe('classifyRule', () => {
 describe('compat fixtures', () => {
   it('there are at least 12', () => {
     expect(compatFixtures().length).toBeGreaterThanOrEqual(12)
+  })
+
+  it.each(fixSafetyFixtures().map((f) => [f.name, f] as const))('%s: compiles with pug', (_name, f) => {
+    expect(pugCompiles(f.text)).toBe(true)
   })
 
   it.each(compatFixtures().map((f) => [f.name, f] as const))('%s: the HTML twin has the same elements and class sets', (_name, f) => {

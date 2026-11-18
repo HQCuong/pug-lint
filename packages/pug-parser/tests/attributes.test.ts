@@ -215,6 +215,17 @@ describe('parsePug: attribute blocks', () => {
     expect(attrs(doc2)[0]!.value!.raw).toBe('y')
   })
 
+  it('reports a quote glued to an unquoted key (pug-lexer reads one key, pug cannot compile it)', () => {
+    const src = 'div(a"b")'
+    const doc = parse(src)
+    expect(doc.errors[0]).toMatchObject({ code: 'unexpected-character', offset: at(src, '"')[0] })
+  })
+
+  it('reports a backslash in an unquoted key (pug cannot compile it)', () => {
+    const src = 'input(:value=v @input\\=f)'
+    expect(parse(src).errors[0]).toMatchObject({ code: 'unexpected-character', offset: at(src, '\\')[0] })
+  })
+
   it('reports an unterminated string once and recovers', () => {
     const src = 'a(href="x'
     const doc = parse(src)

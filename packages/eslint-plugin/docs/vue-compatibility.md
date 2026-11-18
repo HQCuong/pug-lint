@@ -13,7 +13,7 @@ Generated against eslint-plugin-vue 10.12.1. Each rule runs alone on the Pug fix
   templates (still active on HTML templates and scripts). Keep one with `vuePug.configure({ keepVueRules })`.
 - **forced-keep**: always runs.
 
-ok: 179 · untested: 37 · crash: 4 · mismatch: 3 · fix-unsafe: 10 · fix-ugly: 0 · forced-suppress: 7 · forced-keep: 12
+ok: 178 · untested: 37 · crash: 4 · mismatch: 3 · fix-unsafe: 11 · fix-ugly: 0 · forced-suppress: 7 · forced-keep: 12
 
 | Rule | Status | Reason | Replacement |
 |---|---|---|---|
@@ -56,7 +56,7 @@ ok: 179 · untested: 37 · crash: 4 · mismatch: 3 · fix-unsafe: 10 · fix-ugly
 | `vue/html-comment-indent` | untested | no report on any fixture or option set |  |
 | `vue/html-end-tags` | forced-suppress | replaced by vue-pug/self-closing inside Pug templates (measured: untested) | `vue-pug/self-closing` |
 | `vue/html-indent` | crash | throws on AttrOrder.vue | `vue-pug/indent` |
-| `vue/html-quotes` | forced-suppress | its fixer escapes inner quotes as &quot;, which is wrong inside a Pug attribute (a JS string that Pug then HTML-escapes), and it does not know that a backtick is a legitimate Pug quote (measured: mismatch: AttrOrder.vue: more on Pug (expected ×2)) | `vue-pug/attribute-quotes` |
+| `vue/html-quotes` | forced-suppress | its fixer escapes inner quotes as &quot;, which is wrong inside a Pug attribute (a JS string that Pug then HTML-escapes), and it does not know that a backtick is a legitimate Pug quote (measured: fix-unsafe: fix-safety/UnquotedValues.vue: the guard dropped 7 fix(es) or suggestion(s)) | `vue-pug/attribute-quotes` |
 | `vue/html-self-closing` | forced-suppress | replaced by vue-pug/self-closing inside Pug templates (measured: mismatch: AttrOrder.vue: more on Pug (disallowSelfClosing ×2)) | `vue-pug/self-closing` |
 | `vue/jsx-uses-vars` | untested | no report on any fixture or option set |  |
 | `vue/key-spacing` | ok | same reports as the HTML twin; fixes clean |  |
@@ -236,13 +236,13 @@ ok: 179 · untested: 37 · crash: 4 · mismatch: 3 · fix-unsafe: 10 · fix-ugly
 | `vue/space-in-parens` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/space-infix-ops` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/space-unary-ops` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/static-class-names-order` | ok | same reports as the HTML twin; fixes clean |  |
+| `vue/static-class-names-order` | fix-unsafe | fix-safety/UnquotedValues.vue: the guard dropped 2 fix(es) or suggestion(s) |  |
 | `vue/template-curly-spacing` | untested | no report on any fixture or option set |  |
 | `vue/this-in-template` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/use-v-on-exact` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/v-bind-style` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/v-for-delimiter-style` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/v-if-else-key` | fix-unsafe | TemplateMisc.vue: the fixed template does not compile with pug |  |
+| `vue/v-if-else-key` | fix-unsafe | TemplateMisc.vue: the guard dropped 2 fix(es) or suggestion(s) |  |
 | `vue/v-on-event-hyphenation` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/v-on-handler-style` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/v-on-style` | ok | same reports as the HTML twin; fixes clean |  |

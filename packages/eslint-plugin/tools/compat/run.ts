@@ -1,6 +1,8 @@
 // The vue-rule compatibility harness. Every eslint-plugin-vue rule runs alone on each compat fixture
 // (`tests/fixtures/compat/*.vue`) and on its HTML twin (the Pug template rendered by the real `pug`
-// compiler). The verdicts become `src/configs/generated/vue-compat.ts` and `docs/vue-compatibility.md`.
+// compiler), and on the fix-safety fixtures (`tests/fixtures/compat/fix-safety/*.vue`: Pug with no
+// faithful HTML twin, such as unquoted JavaScript values; only their fixes are checked). The
+// verdicts become `src/configs/generated/vue-compat.ts` and `docs/vue-compatibility.md`.
 //
 //   node tools/compat/run.ts           write both files
 //   node tools/compat/run.ts --check   exit 1 when either file is stale
@@ -27,11 +29,15 @@ import type { Override } from './overrides.ts'
 export type { RuleVerdict }
 
 // Dev-only CommonJS package without types.
-const pug = createRequire(import.meta.url)('pug') as { render: (src: string, options: { doctype: string }) => string }
+const pug = createRequire(import.meta.url)('pug') as {
+  render: (src: string, options: { doctype: string }) => string
+  compile: (src: string, options: { doctype: string }) => unknown
+}
 type Status = RuleVerdict['status']
 
 const packageRoot = new URL('../../', import.meta.url)
 const fixturesDir = new URL('tests/fixtures/compat/', packageRoot)
+const fixSafetyDir = new URL('tests/fixtures/compat/fix-safety/', packageRoot)
 const compatFile = new URL('src/configs/generated/vue-compat.ts', packageRoot)
 const docsFile = new URL('docs/vue-compatibility.md', packageRoot)
 
@@ -98,6 +104,31 @@ export function compatFixtures(): CompatFixture[] {
       const text = readFileSync(new URL(f, fixturesDir), 'utf8')
       return { name: f, text, twin: htmlTwin(text) }
     })
+}
+
+/** A fix-safety fixture: a `.vue` file whose Pug template compiles but has no faithful HTML twin. */
+export interface FixSafetyFixture {
+  name: string
+  text: string
+}
+
+/** True when the real `pug` compiles the (single) Pug template of `text`, de-indented. */
+export function pugCompiles(text: string): boolean {
+  const [range] = findPugTemplateRanges(text)
+  if (!range) return false
+  try {
+    pug.compile(dedent(text.slice(range[0], range[1])), { doctype: 'html' })
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function fixSafetyFixtures(): FixSafetyFixture[] {
+  return readdirSync(fixSafetyDir)
+    .filter((f) => f.endsWith('.vue'))
+    .sort()
+    .map((f) => ({ name: `fix-safety/${f}`, text: readFileSync(new URL(f, fixSafetyDir), 'utf8') }))
 }
 
 function templateBody(code: string, pugSide: boolean): AST.VElement {
@@ -258,26 +289,58 @@ function classifyRun(rule: string, options: unknown[], f: CompatFixture, vue: ES
   return worst
 }
 
+/**
+ * One rule, one fix-safety fixture, one option set: only whether its fixes are safe. The guard must
+ * keep every fix and suggestion, and the fixed template must compile with the real `pug`.
+ */
+function classifyFixSafety(rule: string, options: unknown[], f: FixSafetyFixture, vue: ESLint.Plugin): RunResult {
+  const rules: Linter.RulesRecord = { [rule]: ['error', ...options] }
+  const linter = new Linter({ configType: 'flat' })
+  let lintDrops = 0
+  let fixDrops = 0
+  let messages: Linter.LintMessage[]
+  try {
+    messages = linter.verify(f.text, pugConfig(vue, rules, () => lintDrops++), FILENAME).filter((m) => m.ruleId === rule)
+  } catch {
+    return { status: 'crash', reason: `throws on ${f.name}`, reports: 1 }
+  }
+  const result = (status: RunResult['status'], reason: string): RunResult => ({ status, reason: `${f.name}: ${reason}`, reports: messages.length })
+  if (lintDrops > 0) return result('fix-unsafe', `the guard dropped ${lintDrops} fix(es) or suggestion(s)`)
+  if (!messages.some((m) => m.fix)) return result('ok', '')
+  const fixed = linter.verifyAndFix(f.text, pugConfig(vue, rules, () => fixDrops++), { filename: FILENAME })
+  if (fixDrops > 0) return result('fix-unsafe', `the guard dropped ${fixDrops} fix(es) while fixing`)
+  if (!pugCompiles(fixed.output)) return result('fix-unsafe', 'the fixed template does not compile with pug')
+  return result('ok', '')
+}
+
 export interface ClassifyOptions {
   /** Extra rules (tests only), added to a copy of eslint-plugin-vue under their name without `vue/`. */
   rules?: Record<string, Rule.RuleModule>
   /** Default: every compat fixture. */
   fixtures?: CompatFixture[]
+  /** Default: every fix-safety fixture when `fixtures` is not given, else none. */
+  fixSafety?: FixSafetyFixture[]
 }
 
 let cachedFixtures: CompatFixture[] | undefined
+let cachedFixSafety: FixSafetyFixture[] | undefined
 
 /** The harness's own verdict for `ruleName` (overrides not applied). Worst status across fixtures and option sets wins. */
 export function classifyRule(ruleName: string, optionSets: unknown[][], opts: ClassifyOptions = {}): RuleVerdict {
   const vue: ESLint.Plugin = opts.rules ? { ...pluginVue, rules: { ...vueRules, ...opts.rules } } : (pluginVue as ESLint.Plugin)
   const fixtures = opts.fixtures ?? (cachedFixtures ??= compatFixtures())
+  const fixSafety = opts.fixSafety ?? (opts.fixtures ? [] : (cachedFixSafety ??= fixSafetyFixtures()))
   let worst: RunResult = { status: 'ok', reason: '', reports: 0 }
   let reports = 0
   for (const options of optionSets) {
     // An invalid option set throws here, on an empty file, rather than passing for a crash on Pug.
     new Linter({ configType: 'flat' }).verify('', htmlConfig(vue, { [ruleName]: ['error', ...options] }), FILENAME)
-    for (const f of fixtures) {
-      const run = classifyRun(ruleName, options, f, vue)
+    const runs = [
+      ...fixtures.map((f) => () => classifyRun(ruleName, options, f, vue)),
+      ...fixSafety.map((f) => () => classifyFixSafety(ruleName, options, f, vue)),
+    ]
+    for (const runOne of runs) {
+      const run = runOne()
       reports += run.reports
       if (SEVERITY[run.status] > SEVERITY[worst.status]) worst = run
     }
@@ -385,11 +448,13 @@ export function generate(
     const problems = twinProblems(f)
     if (problems.length > 0) throw new Error(`compat fixture ${f.name}: ${problems.join('; ')}`)
   }
+  const fixSafety = fixSafetyFixtures()
+  for (const f of fixSafety) if (!pugCompiles(f.text)) throw new Error(`compat fixture ${f.name}: pug cannot compile it`)
   const names = Object.keys(vueRules).filter((n) => !vueRules[n]!.meta?.deprecated).sort().map((n) => `vue/${n}`)
   for (const rule of Object.keys(overrides)) if (!names.includes(rule)) throw new Error(`override for unknown rule ${rule}`)
   for (const rule of Object.keys(optionSets)) if (!names.includes(rule)) throw new Error(`option sets for unknown rule ${rule}`)
   const verdicts = names.map((rule) =>
-    applyOverride(classifyRule(rule, [[], ...(optionSets[rule] ?? [])], { fixtures }), overrides[rule]))
+    applyOverride(classifyRule(rule, [[], ...(optionSets[rule] ?? [])], { fixtures, fixSafety }), overrides[rule]))
   const version = (pluginVue as { meta: { version: string } }).meta.version
   return { verdicts, source: renderSource(verdicts, version), markdown: renderMarkdown(verdicts, version) }
 }

@@ -85,8 +85,8 @@ runRule('max-attributes-per-line', rule, {
     },
     {
       name: 'only the block over the limit',
-      pug: 'a(x)(w x y z)',
-      output: 'a(x)(w\n  x\n  y\n  z)',
+      pug: 'a(v)(w x y z)',
+      output: 'a(v)(w\n  x\n  y\n  z)',
       errors: [err('x', 2, 8), err('y', 2, 10), err('z', 2, 12)],
     },
     {

@@ -155,6 +155,7 @@ Suppressed inside Pug templates only (they keep working on HTML templates and in
 - `vue/object-property-newline`
 - `vue/padding-line-between-tags`
 - `vue/singleline-html-element-content-newline`
+- `vue/static-class-names-order`
 - `vue/v-if-else-key`
 
 <!-- end auto-generated vue rule lists -->

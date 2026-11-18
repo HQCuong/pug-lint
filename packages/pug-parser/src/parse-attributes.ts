@@ -1,5 +1,5 @@
 import type { Attribute, AttributeBlock, AttributeValue, MixinCall, PugParseError, Range, Tag } from './ast.ts'
-import { isWhitespace, skipExpression, skipString, skipTemplate } from './expression.ts'
+import { isWhitespace, literalSpans, skipExpression, skipString, skipTemplate } from './expression.ts'
 
 // As in pug-lexer (character-parser's isPunctuator): after top-level whitespace
 // a value goes on when the next character is one of these, except ':' and '...'.
@@ -14,10 +14,15 @@ function skipWhitespace(text: string, i: number, end: number): number {
   return i
 }
 
+const OPENER: Record<string, string> = { ')': '(', ']': '[', '}': '{' }
+
 /**
- * End of the attribute key at `i`: a quoted key, or chars up to whitespace,
- * '=', '!=', ',', an unbalanced paren or bracket, or a quote. Balanced `[…]`
- * and `(…)` belong to the key (`:[arg]`, `#cell(name)`), as in pug-lexer.
+ * End of the attribute key at `i`: a quoted key, or chars up to whitespace, '=', '!', ',', a quote, or
+ * a closing paren or bracket that closes nothing. As in pug-lexer, brackets do not protect those
+ * stops, but balanced `( [ {` belong to the key (`:[arg]`, `#cell(name)`), with a literal inside
+ * them that has no stop character and balanced brackets (`#[`h-${k}`]`). Pug reads the whole
+ * attribute block with a JavaScript scanner first, so a key whose brackets are not balanced, or that
+ * holds a '/' (a comment or regular expression to that scanner) or a backslash, is an error.
  */
 function skipKey(text: string, i: number, end: number, errors: PugParseError[]): number {
   const c = text[i]
@@ -28,17 +33,66 @@ function skipKey(text: string, i: number, end: number, errors: PugParseError[]):
     return end
   }
   let j = i
-  let brackets = 0
-  while (j < end) {
+  const open: string[] = []
+  for (; j < end; j++) {
     const d = text[j]!
-    if (d === '[' || d === '(') brackets++
-    else if ((d === ']' || d === ')') && brackets > 0) brackets--
-    else if (brackets === 0) {
-      if (isWhitespace(d) || '=,()]}\'"`'.includes(d) || (d === '!' && text[j + 1] === '=')) break
+    if (d === '[' || d === '(' || d === '{') {
+      open.push(d)
+    } else if (d === ']' || d === ')' || d === '}') {
+      if (open.length === 0) break
+      if (open.pop() !== OPENER[d]) {
+        errors.push({ code: 'unbalanced-key', message: `Mismatched ${JSON.stringify(d)} in an attribute key`, offset: j })
+        return j
+      }
+    } else if (d === '/' || d === '\\') {
+      errors.push({ code: 'unexpected-character', message: `Unexpected ${JSON.stringify(d)} in an attribute key`, offset: j })
+      return j
+    } else if (open.length > 0 && (d === '"' || d === "'" || d === '`')) {
+      const close = d === '`' ? skipTemplate(text, j, end, []).end : skipString(text, j, end)
+      if (close < 0) break
+      const literal = text.slice(j + 1, close - 1)
+      if (/[\s=,!/\\]/.test(literal) || !balanced(literal)) {
+        errors.push({ code: 'unbalanced-key', message: 'Unsupported literal in an attribute key', offset: j })
+        return close
+      }
+      j = close - 1
+    } else if (isWhitespace(d) || '=,!\'"`'.includes(d)) {
+      break
     }
-    j++
+  }
+  if (open.length > 0) {
+    errors.push({ code: 'unbalanced-key', message: `Unclosed ${JSON.stringify(open.at(-1))} in an attribute key`, offset: i })
   }
   return j
+}
+
+/** True when the `( [ {` of `s` are balanced and properly nested (no literals are skipped). */
+function balanced(s: string): boolean {
+  const open: string[] = []
+  for (const c of s) {
+    if (c === '(' || c === '[' || c === '{') open.push(c)
+    else if ((c === ')' || c === ']' || c === '}') && open.pop() !== OPENER[c]) return false
+  }
+  return open.length === 0
+}
+
+/**
+ * Offset of an escape in the literal `text[s, e)` that JavaScript rejects (`\\u` without 4 hex digits
+ * or `{hex}`, `\\x` without 2 hex digits; in a template literal also a legacy octal escape), or -1.
+ * Pug compiles the literals of attribute values as JavaScript.
+ */
+function badEscape(text: string, s: number, e: number): number {
+  const template = text[s] === '`'
+  for (let i = s; i < e; i++) {
+    if (text[i] !== '\\') continue
+    const next = text[i + 1] ?? ''
+    const rest = text.slice(i + 2, e)
+    if (next === 'u' && !/^(?:[0-9a-fA-F]{4}|\{[0-9a-fA-F]+\})/.test(rest)) return i
+    if (next === 'x' && !/^[0-9a-fA-F]{2}/.test(rest)) return i
+    if (template && (/[1-9]/.test(next) || (next === '0' && /^[0-9]/.test(rest)))) return i
+    i++
+  }
+  return -1
 }
 
 /**
@@ -90,6 +144,17 @@ function skipValue(text: string, i: number, end: number, errors: PugParseError[]
     if (complete && (!PUNCTUATORS.has(next) || next === ':' || text.startsWith('...', q))) return p
     p = q
   }
+}
+
+/** Offset of a `//` in `text[start, end)` outside string and template literals, or -1 (Pug rejects it). */
+function lineComment(text: string, start: number, end: number): number {
+  let from = start
+  for (const [s, e] of [...literalSpans(text, [start, end]), [end, end] as const]) {
+    const k = text.slice(from, s).indexOf('//')
+    if (k >= 0) return from + k
+    from = e
+  }
+  return -1
 }
 
 function makeValue(text: string, start: number, end: number): AttributeValue {
@@ -152,6 +217,17 @@ export function parseAttributeBlock(
     pos = keyEnd
     const opStart = skipWhitespace(text, keyEnd, end)
     const opValue = text[opStart] === '=' ? '=' : text.startsWith('!=', opStart) ? '!=' : null
+    // As in pug-lexer: a '!' after a key must start '!=', a quoted key is followed by whitespace,
+    // an operator, ',' or the end of the block, and a quote does not follow an unquoted key.
+    if (!opValue && text[opStart] === '!') {
+      errors.push({ code: 'unexpected-character', message: 'Expected "=" after "!"', offset: opStart + 1 })
+      pos = opStart + 1
+      continue
+    }
+    const quoted = c === '"' || c === "'"
+    if (!opValue && opStart === keyEnd && keyEnd < end && (quoted ? !',)'.includes(text[keyEnd]!) : '\'"`'.includes(text[keyEnd]!))) {
+      errors.push({ code: 'unexpected-character', message: 'Expected "=" or whitespace after an attribute key', offset: keyEnd })
+    }
     if (!opValue) continue
     const opEnd = opStart + opValue.length
     attribute.operator = { value: opValue, range: [opStart, opEnd] }
@@ -164,6 +240,14 @@ export function parseAttributeBlock(
         errors.push({ code: 'missing-attribute-value', message: 'Expected a value after the operator', offset: valueStart })
       }
       continue
+    }
+    const comment = lineComment(text, valueStart, valueEnd)
+    if (comment >= 0) {
+      errors.push({ code: 'unexpected-character', message: 'A line comment cannot be in an attribute value', offset: comment })
+    }
+    for (const [ls, le] of literalSpans(text, [valueStart, valueEnd])) {
+      const bad = badEscape(text, ls, le)
+      if (bad >= 0) errors.push({ code: 'bad-escape', message: 'Invalid escape sequence in a JavaScript string', offset: bad })
     }
     attribute.value = makeValue(text, valueStart, valueEnd)
     attribute.range = [attribute.range[0], valueEnd]
@@ -257,12 +341,35 @@ export function parseTagHead(src: string, start: number, limit: number, named = 
       break
     }
   }
+  errs.push(...duplicates(shorthands, attributeBlocks))
   // A mixin call has no self-closing form: its '/' is left for the caller to report.
   if (!named && (name || shorthands.length > 0) && src[pos] === '/' && pos < limit) {
     selfClose = [pos, pos + 1]
     pos++
   }
   return { name, shorthands, attributeBlocks, andAttributes, selfClose, errs, unclosed, pos }
+}
+
+/**
+ * As in pug-parser: a tag or mixin call may not repeat an attribute name, other than `class`; an id
+ * shorthand counts as `id`. A quoted key's name is its content.
+ */
+function duplicates(shorthands: Tag['shorthands'], blocks: readonly AttributeBlock[]): PugParseError[] {
+  const named = [
+    ...shorthands.filter((sh) => sh.kind === 'id').map((sh) => ({ name: 'id', offset: sh.range[0] })),
+    ...blocks.flatMap((b) => b.attributes).map(({ key }) => {
+      const quoted = key.raw.length >= 2 && (key.raw[0] === '"' || key.raw[0] === "'") && key.raw.at(-1) === key.raw[0]
+      return { name: quoted ? key.raw.slice(1, -1) : key.raw, offset: key.range[0] }
+    }),
+  ].sort((a, b) => a.offset - b.offset)
+  const seen = new Set<string>()
+  const errors: PugParseError[] = []
+  for (const { name, offset } of named) {
+    if (name === 'class') continue
+    if (seen.has(name)) errors.push({ code: 'duplicate-attribute', message: `Duplicate attribute ${JSON.stringify(name)}`, offset })
+    seen.add(name)
+  }
+  return errors
 }
 
 export interface MixinHead extends TagHead {
