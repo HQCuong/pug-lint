@@ -1,0 +1,29 @@
+{
+  "name": "@pug-lint/parser",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Concrete syntax tree parser for Pug templates",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": "^20.19.0 || ^22.13.0 || >=24"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "pug-lexer": "^5.0.1",
+    "pug-parser": "^6.0.0"
+  }
+}

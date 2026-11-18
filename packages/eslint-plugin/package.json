@@ -1,0 +1,41 @@
+{
+  "name": "@pug-lint/eslint-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "description": "ESLint lint and format rules for <template lang=\"pug\"> in Vue SFCs",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": "^20.19.0 || ^22.13.0 || >=24"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./tokenizer": "./dist/tokenizer.cjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pug-lint/parser": "workspace:*"
+  },
+  "peerDependencies": {
+    "eslint": "^9.15.0 || ^10.0.0",
+    "eslint-plugin-vue": "^10.0.0",
+    "vue-eslint-parser": "^10.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^10.15.0",
+    "eslint-plugin-vue": "^10.12.1",
+    "eslint9": "npm:eslint@^9.15.0",
+    "pug": "^3.0.4",
+    "vue-eslint-parser": "^10.4.2"
+  }
+}
