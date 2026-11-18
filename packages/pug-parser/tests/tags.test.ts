@@ -88,6 +88,15 @@ describe('parsePug: tags and nesting', () => {
     ])
   })
 
+  it('ends a tag name on a word character, leaving the expansion colon', () => {
+    const src = 'li: a'
+    const li = asTag(parse(src).children[0])
+    expect(li.name).toEqual({ value: 'li', range: at(src, 'li') })
+    expect(asTag(parse('my-comp:x').children[0]).name?.value).toBe('my-comp:x')
+    expect(asTag(parse('a-').children[0]).name?.value).toBe('a')
+    expect(asTag(parse('a:').children[0]).name?.value).toBe('a')
+  })
+
   it('nests with tabs and records a tab indentUnit', () => {
     const src = cases.tabs!
     const doc = parse(src)

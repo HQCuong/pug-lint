@@ -12,7 +12,8 @@ interface Open {
   node: Tag | Comment | null
 }
 
-const TAG_NAME = /[A-Za-z][\w:-]*/y
+// As in pug-lexer: a name ends on a word character, so "li: a" leaves the expansion colon.
+const TAG_NAME = /[A-Za-z](?:[\w:-]*\w)?/y
 // As in pug-lexer: a class name contains at least one letter or '_'.
 const CLASS_NAME = /[_a-zA-Z0-9-]*[_a-zA-Z][_a-zA-Z0-9-]*/y
 const ID_NAME = /[\w-]+/y
