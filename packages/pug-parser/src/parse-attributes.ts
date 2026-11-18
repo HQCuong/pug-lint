@@ -1,4 +1,4 @@
-import type { Attribute, AttributeBlock, AttributeValue, PugParseError, Range } from './ast.ts'
+import type { Attribute, AttributeBlock, AttributeValue, PugParseError, Range, Tag } from './ast.ts'
 import { isWhitespace, skipExpression, skipString, skipTemplate } from './expression.ts'
 
 // Binary operators that join an unquoted value across whitespace ("b + c").
@@ -131,4 +131,90 @@ export function parseAttributeBlock(
     pos = valueEnd
   }
   return { block: { range: [open, pos], attributes, commas }, next: pos, errors }
+}
+
+// As in pug-lexer: a name ends on a word character, so "li: a" leaves the expansion colon.
+const TAG_NAME = /[A-Za-z](?:[\w:-]*\w)?/y
+// As in pug-lexer: a class name contains at least one letter or '_'.
+const CLASS_NAME = /[_a-zA-Z0-9-]*[_a-zA-Z][_a-zA-Z0-9-]*/y
+const ID_NAME = /[\w-]+/y
+const AND_ATTRIBUTES = '&attributes('
+const UNCLOSED = new Set(['unclosed-attributes', 'unterminated-string'])
+
+/** Match a sticky regex at `pos` of `s`. */
+function matchAt(re: RegExp, s: string, pos: number): string | null {
+  re.lastIndex = pos
+  return re.exec(s)?.[0] ?? null
+}
+
+export interface TagHead {
+  name: Tag['name']
+  shorthands: Tag['shorthands']
+  attributeBlocks: AttributeBlock[]
+  andAttributes: Tag['andAttributes']
+  selfClose: Range | null
+  errs: PugParseError[]
+  unclosed: boolean   // a block or `&attributes` paren is not closed before `limit`
+  pos: number         // index after the head
+}
+
+/**
+ * The tag head starting at `start` (name, `.class`/`#id`, attribute blocks,
+ * `&attributes(…)`, trailing `/`), reading no further than `limit`. Used for
+ * tag lines and for the tag of a `#[…]` interpolation.
+ */
+export function parseTagHead(src: string, start: number, limit: number): TagHead {
+  const errs: PugParseError[] = []
+  let pos = start
+  let name: Tag['name'] = null
+  const tagName = matchAt(TAG_NAME, src, pos)
+  if (tagName) {
+    name = { value: tagName, range: [start, start + tagName.length] }
+    pos += tagName.length
+  }
+  const shorthands: Tag['shorthands'] = []
+  const attributeBlocks: AttributeBlock[] = []
+  const andAttributes: Tag['andAttributes'] = []
+  let unclosed = false
+  let selfClose: Range | null = null
+  for (;;) {
+    const sigil = src[pos]
+    if (sigil === '.' || sigil === '#') {
+      const value = matchAt(sigil === '.' ? CLASS_NAME : ID_NAME, src, pos + 1)
+      if (!value) break
+      shorthands.push({ kind: sigil === '.' ? 'class' : 'id', value, range: [pos, pos + 1 + value.length] })
+      pos += 1 + value.length
+    } else if (!name && shorthands.length === 0) {
+      break   // attributes need a tag name or shorthand before them
+    } else if (sigil === '(') {
+      const result = parseAttributeBlock(src, pos, limit)
+      attributeBlocks.push(result.block)
+      errs.push(...result.errors)
+      if (result.errors.some((e) => UNCLOSED.has(e.code))) unclosed = true
+      pos = result.next
+    } else if (src.startsWith(AND_ATTRIBUTES, pos)) {
+      const open = pos + AND_ATTRIBUTES.length - 1
+      const before = errs.length
+      const close = skipExpression(src, open + 1, limit, { comma: false, whitespace: false }, errs)
+      const closed = close < limit && src[close] === ')'
+      if (!closed) {
+        unclosed = true
+        if (errs.length === before) {
+          errs.push({ code: 'unclosed-attributes', message: '&attributes is not closed with ")"', offset: open })
+        }
+      }
+      let [es, ee] = [open + 1, close]
+      while (es < ee && isWhitespace(src[es])) es++
+      while (ee > es && isWhitespace(src[ee - 1])) ee--
+      andAttributes.push({ range: [pos, closed ? close + 1 : close], expression: [es, ee] })
+      pos = closed ? close + 1 : close
+    } else {
+      break
+    }
+  }
+  if ((name || shorthands.length > 0) && src[pos] === '/' && pos < limit) {
+    selfClose = [pos, pos + 1]
+    pos++
+  }
+  return { name, shorthands, attributeBlocks, andAttributes, selfClose, errs, unclosed, pos }
 }

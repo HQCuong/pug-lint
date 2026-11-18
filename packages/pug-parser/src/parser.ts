@@ -1,6 +1,6 @@
-import type { AttributeBlock, Comment, PugDocument, PugLine, PugNode, PugParseError, Range, Tag } from './ast.ts'
-import { isWhitespace, skipExpression } from './expression.ts'
-import { parseAttributeBlock } from './parse-attributes.ts'
+import type { Comment, PugDocument, PugLine, PugNode, PugParseError, Range, Tag, Text } from './ast.ts'
+import { parseTagHead } from './parse-attributes.ts'
+import { makeText, parseInlineText } from './parse-text.ts'
 import { type RawLine, scanLines } from './scanner.ts'
 
 export interface ParseOptions {
@@ -11,21 +11,7 @@ export interface ParseOptions {
 /** A line on the indent stack. `node` is null for a line that produced no node. */
 interface Open {
   indent: string
-  node: Tag | Comment | null
-}
-
-// As in pug-lexer: a name ends on a word character, so "li: a" leaves the expansion colon.
-const TAG_NAME = /[A-Za-z](?:[\w:-]*\w)?/y
-// As in pug-lexer: a class name contains at least one letter or '_'.
-const CLASS_NAME = /[_a-zA-Z0-9-]*[_a-zA-Z][_a-zA-Z0-9-]*/y
-const ID_NAME = /[\w-]+/y
-const AND_ATTRIBUTES = '&attributes('
-const UNCLOSED = new Set(['unclosed-attributes', 'unterminated-string'])
-
-/** Match a sticky regex at `pos` of `s`. */
-function matchAt(re: RegExp, s: string, pos: number): string | null {
-  re.lastIndex = pos
-  return re.exec(s)?.[0] ?? null
+  node: PugNode | null
 }
 
 /** `inner` is nested under `outer`: `outer` is a strict prefix of `inner`. */
@@ -79,117 +65,97 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
     return children
   }
 
-  /** The comment on raw[index] and its block (deeper lines); returns the next raw index. */
-  function parseComment(index: number, indent: string, depth: number): { node: Comment; next: number } {
-    const line = raw[index]!
-    const start = line.indent[1]
-    const unbuffered = text.slice(start, line.range[1]).startsWith('//-')
-    let end = line.range[1]
-    let next = index + 1
+  /**
+   * The raw block from raw[from] on: the lines indented deeper than `indent`
+   * (blank lines between them included). Each non-blank line is pushed as a
+   * `raw` line anchored to the block's first line and handed to `onLine`.
+   * Returns the next raw index.
+   */
+  function rawBlock(from: number, indent: string, depth: number, onLine: (l: RawLine) => void): number {
+    let next = from
     let firstRaw: number | null = null
-    for (let j = index + 1; j < raw.length; j++) {
+    for (let j = from; j < raw.length; j++) {
       const l = raw[j]!
       if (l.blank) continue
       if (indentOf(l).length <= indent.length) break
       for (let k = next; k < j; k++) pushLine(raw[k]!, 'blank', 0)
       firstRaw ??= lines.length
       pushLine(l, 'raw', depth + 1, lines.length === firstRaw ? null : firstRaw)
-      end = l.range[1]
+      onLine(l)
       next = j + 1
     }
+    return next
+  }
+
+  /** The comment on raw[index] and its block (deeper lines); returns the next raw index. */
+  function parseComment(index: number, indent: string, depth: number): { node: Comment; next: number } {
+    const line = raw[index]!
+    const start = line.indent[1]
+    const unbuffered = text.slice(start, line.range[1]).startsWith('//-')
+    let end = line.range[1]
+    const next = rawBlock(index + 1, indent, depth, (l) => {
+      end = l.range[1]
+    })
     const content: Range = [start + (unbuffered ? 3 : 2), end]
     return { node: { type: 'Comment', buffered: !unbuffered, range: [start, end], content }, next }
   }
 
-  /**
-   * The tag head starting at `start` (name, `.class`/`#id`, attribute blocks,
-   * `&attributes(…)`, trailing `/`), reading no further than `limit`. `unclosed`
-   * is true when a block or `&attributes` paren is not closed before `limit`.
-   */
-  function parseHead(start: number, limit: number) {
-    const errs: PugParseError[] = []
-    let pos = start
-    let name: Tag['name'] = null
-    const tagName = matchAt(TAG_NAME, src, pos)
-    if (tagName) {
-      name = { value: tagName, range: [start, start + tagName.length] }
-      pos += tagName.length
-    }
-    const shorthands: Tag['shorthands'] = []
-    const attributeBlocks: AttributeBlock[] = []
-    const andAttributes: Tag['andAttributes'] = []
-    let unclosed = false
-    let selfClose: Range | null = null
-    for (;;) {
-      const sigil = src[pos]
-      if (sigil === '.' || sigil === '#') {
-        const value = matchAt(sigil === '.' ? CLASS_NAME : ID_NAME, src, pos + 1)
-        if (!value) break
-        shorthands.push({ kind: sigil === '.' ? 'class' : 'id', value, range: [pos, pos + 1 + value.length] })
-        pos += 1 + value.length
-      } else if (!name && shorthands.length === 0) {
-        break   // attributes need a tag name or shorthand before them
-      } else if (sigil === '(') {
-        const result = parseAttributeBlock(src, pos, limit)
-        attributeBlocks.push(result.block)
-        errs.push(...result.errors)
-        if (result.errors.some((e) => UNCLOSED.has(e.code))) unclosed = true
-        pos = result.next
-      } else if (src.startsWith(AND_ATTRIBUTES, pos)) {
-        const open = pos + AND_ATTRIBUTES.length - 1
-        const before = errs.length
-        const close = skipExpression(src, open + 1, limit, { comma: false, whitespace: false }, errs)
-        const closed = close < limit && src[close] === ')'
-        if (!closed) {
-          unclosed = true
-          if (errs.length === before) {
-            errs.push({ code: 'unclosed-attributes', message: '&attributes is not closed with ")"', offset: open })
-          }
-        }
-        let [es, ee] = [open + 1, close]
-        while (es < ee && isWhitespace(src[es])) es++
-        while (ee > es && isWhitespace(src[ee - 1])) ee--
-        andAttributes.push({ range: [pos, closed ? close + 1 : close], expression: [es, ee] })
-        pos = closed ? close + 1 : close
-      } else {
-        break
-      }
-    }
-    if ((name || shorthands.length > 0) && src[pos] === '/' && pos < limit) {
-      selfClose = [pos, pos + 1]
-      pos++
-    }
-    return { name, shorthands, attributeBlocks, andAttributes, selfClose, errs, unclosed, pos }
+  /** A Text node of `form` for the content `content`; its errors join the document's. */
+  function textNode(form: Text['form'], range: Range, content: Range): Text {
+    const result = makeText(src, form, range, content)
+    errors.push(...result.errors)
+    return result.node
+  }
+
+  /** The pipe line (`| text`) or literal HTML line (`<…`) on `line`. */
+  function parseTextLine(line: RawLine): Text {
+    const start = line.indent[1]
+    const end = line.range[1]
+    if (src[start] === '<') return textNode('html', [start, end], [start, end])
+    const contentStart = Math.min(start + (src[start + 1] === ' ' ? 2 : 1), end)
+    return textNode('pipe', [start, end], [contentStart, end])
   }
 
   /**
    * The tag on raw[index]; `last` is the raw index of the head's last line (a
    * multi-line attribute block). An unclosed block is re-read within its first
    * line, so it never swallows the lines after it. The rest of the head's last
-   * line is reported as unsupported.
+   * line is inline text after a space, a text-block '.', or else unsupported.
    */
   function parseTag(index: number): { node: Tag | null; last: number } {
     const line = raw[index]!
     const start = line.indent[1]
-    let head = parseHead(start, docEnd)
-    if (head.unclosed) head = parseHead(start, line.range[1])
+    let head = parseTagHead(src, start, docEnd)
+    if (head.unclosed) head = parseTagHead(src, start, line.range[1])
     errors.push(...head.errs)
     let last = index
     while (last + 1 < raw.length && raw[last + 1]!.range[0] <= head.pos) last++
     const end = raw[last]!.range[1]
-    if (head.pos < end) {
-      errors.push({
-        code: 'unsupported-syntax',
-        message: `Unsupported syntax: ${JSON.stringify(src.slice(head.pos, end))}`,
-        offset: head.pos,
-      })
+    const isTag = head.name !== null || head.shorthands.length > 0
+    const tailChildren: PugNode[] = []
+    let dot: Range | null = null
+    const pos = head.pos
+    if (pos < end) {
+      if (isTag && src[pos] === ' ') {
+        const inline = parseInlineText(src, pos, end)
+        errors.push(...inline.errors)
+        if (inline.node) tailChildren.push(inline.node)
+      } else if (isTag && src[pos] === '.' && /^[ \t]*$/.test(src.slice(pos + 1, end))) {
+        dot = [pos, pos + 1]
+      } else {
+        errors.push({
+          code: 'unsupported-syntax',
+          message: `Unsupported syntax: ${JSON.stringify(src.slice(pos, end))}`,
+          offset: pos,
+        })
+      }
     }
-    if (!head.name && head.shorthands.length === 0) return { node: null, last }
+    if (!isTag) return { node: null, last }
     const { name, shorthands, attributeBlocks, andAttributes, selfClose } = head
     return {
       node: {
         type: 'Tag', range: [start, end], name, shorthands, attributeBlocks, andAttributes,
-        selfClose, dot: null, expansion: null, children: [],
+        selfClose, dot, expansion: null, children: tailChildren,
       },
       last,
     }
@@ -230,16 +196,27 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
     const siblings = attach(indent, line.indent[1])
     const depth = stack.length
     pushLine(line, 'node', depth)
-    let node: Tag | Comment | null
+    let node: PugNode | null
+    const first = src[line.indent[1]]
     if (text.slice(line.indent[1], line.range[1]).startsWith('//')) {
       const comment = parseComment(i, indent, depth)
       node = comment.node
       i = comment.next
+    } else if (first === '|' || first === '<') {
+      node = parseTextLine(line)
+      i++
     } else {
       const tag = parseTag(i)
-      node = tag.node
-      pushHeadLines(node, i, tag.last, depth)
+      const tagNode = tag.node
+      node = tagNode
+      pushHeadLines(tagNode, i, tag.last, depth)
       i = tag.last + 1
+      if (tagNode?.dot) {
+        i = rawBlock(i, indent, depth, (l) => {
+          const content: Range = [l.indent[1], l.range[1]]
+          tagNode.children.push(textNode('block', content, content))
+        })
+      }
     }
     if (node) siblings.push(node)
     stack.push({ indent, node })

@@ -251,11 +251,11 @@ describe('parsePug: options, lines, errors', () => {
   })
 
   it('records the rest of a line as unsupported-syntax without throwing', () => {
-    const src = 'p(x) hi\n  | text\nspan'
+    const src = 'p(x)= hi\n  - x = 1\nspan'
     const doc = parse(src)
     expect(doc.errors.map((e) => [e.code, e.offset])).toEqual([
-      ['unsupported-syntax', at(src, ' hi')[0]],
-      ['unsupported-syntax', at(src, '|')[0]],
+      ['unsupported-syntax', at(src, '= hi')[0]],
+      ['unsupported-syntax', at(src, '-')[0]],
     ])
     expect(doc.children.map((c) => asTag(c).name?.value)).toEqual(['p', 'span'])
   })
