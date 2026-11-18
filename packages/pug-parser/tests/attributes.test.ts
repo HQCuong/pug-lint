@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Attribute, PugDocument, PugNode, Range, Tag } from '../src/ast.ts'
-import { parsePug } from '../src/index.ts'
+import { literalSpans, parsePug } from '../src/index.ts'
 import { assertInvariants, at, toCRLF } from './helpers.ts'
 
 const slice = (text: string, [s, e]: Range): string => text.slice(s, e)
@@ -223,5 +223,24 @@ describe('parsePug: attribute blocks', () => {
     expect(doc.errors[0]).toMatchObject({ code: 'unclosed-attributes', offset: at(src, '(')[0] })
     expect(doc.children.map((c) => asTag(c).name?.value)).toEqual(['a', 'p'])
     expect(attrs(doc).map((a) => a.key.raw)).toEqual(['href'])
+  })
+})
+
+describe('literalSpans', () => {
+  const spans = (src: string, needle: string): string[] =>
+    literalSpans(src, at(src, needle)).map((r) => slice(src, r))
+
+  it('finds strings and template literals, nested ones included, with escapes', () => {
+    const src = `{ a: "x\\"y", b: ['z', \`t \${"u"} v\`], c: 1 }`
+    expect(spans(src, src)).toEqual(['"x\\"y"', "'z'", '`t ${"u"} v`'])
+  })
+
+  it('spans line breaks and runs to the range end when unclosed', () => {
+    const src = '"x\n  y" + `a\n  b'
+    expect(spans(src, src)).toEqual(['"x\n  y"', '`a\n  b'])
+  })
+
+  it('finds nothing in literal-free code', () => {
+    expect(spans('{ a: 1,\n  b: [2] }', '{ a: 1,\n  b: [2] }')).toEqual([])
   })
 })

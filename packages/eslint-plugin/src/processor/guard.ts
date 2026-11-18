@@ -117,13 +117,23 @@ export function guardMessages(
     return docs.map(fingerprint).join('|') === before ? null : 'structure'
   }
 
-  /** Steps 2–5: the verdict for one fix applied alone; `null` = keep. */
+  /**
+   * Steps 2–5: the verdict for one fix applied alone; `null` = keep. Memoized by range and text:
+   * a rule may put one fix on many messages (vue-pug/indent does), which is verified once.
+   */
+  const verdicts = new Map<string, DropReason | null>()
   const check = (fix: Rule.Fix): DropReason | null => {
     const placement = place(fix.range, templates)
     if (placement === 'outside') return null
     if (placement === 'boundary') return 'boundary'
     if (before === null) return 'broken-template'
-    return verify([fix])
+    const key = `${fix.range[0]}:${fix.range[1]}:${fix.text}`
+    let verdict = verdicts.get(key)
+    if (verdict === undefined) {
+      verdict = verify([fix])
+      verdicts.set(key, verdict)
+    }
+    return verdict
   }
 
   const fixDrops = new Map<number, DropReason>()

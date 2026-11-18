@@ -64,6 +64,30 @@ runRule('indent', rule, {
       errors: [unexpected(3, '2 spaces', '4 spaces'), unexpected(6, '4 spaces', '6 spaces')],
     },
     {
+      name: 'a line starting inside a static string value keeps its whitespace (it is part of the value)',
+      pug: 'div\n    a(title="x\n      y") t',
+      output: 'div\n  a(title="x\n      y") t',
+      errors: [unexpected(3, '2 spaces', '4 spaces')],
+    },
+    {
+      name: 'a line starting inside a template literal of a bound value keeps its whitespace',
+      pug: 'div\n    a(:t="`x\n      y`")',
+      output: 'div\n  a(:t="`x\n      y`")',
+      errors: [unexpected(3, '2 spaces', '4 spaces')],
+    },
+    {
+      name: 'a line starting inside a string of a bound object keeps its whitespace; the others shift',
+      pug: 'div\n    a(:c="{ a: \'x\n      y\',\n      b: 2 }")',
+      output: 'div\n  a(:c="{ a: \'x\n      y\',\n    b: 2 }")',
+      errors: [unexpected(3, '2 spaces', '4 spaces'), unexpected(5, '4 spaces', '6 spaces')],
+    },
+    {
+      name: 'a line starting inside a string mixin argument keeps its whitespace',
+      pug: 'div\n    +m("a\n      b")',
+      output: 'div\n  +m("a\n      b")',
+      errors: [unexpected(3, '2 spaces', '4 spaces')],
+    },
+    {
       name: 'comment body lines shift with their comment',
       pug: 'div\n    // note\n      body\n\n        more\n    //- hidden\n          x\n            y\n    p',
       output: 'div\n  // note\n    body\n\n      more\n  //- hidden\n    x\n      y\n  p',
@@ -107,6 +131,7 @@ runRule('indent', rule, {
       errors: [unexpected(4, '4 spaces', '6 spaces')],
     },
     {
+      // Rule-level behavior only: in a real run the guard drops every fix in a template with a parse error.
       name: 'line holding a parse error is skipped, its sibling is fixed',
       pug: 'div\n   p(x="1" y=)\n   em',
       output: 'div\n   p(x="1" y=)\n  em',
@@ -149,17 +174,17 @@ runRule('indent', rule, {
 })
 
 describe('indent fixes and the guard', () => {
+  const config: Linter.Config[] = [{
+    files: ['**/*.vue'],
+    plugins: { 'vue-pug': { rules: { indent: rule } } },
+    languageOptions: { parser: vueParser, parserOptions: { templateTokenizer: { pug: tokenizerPath } } },
+    rules: { 'vue-pug/indent': 'warn' },
+  }]
   // Pug indentation is structure: a fix that moved `section` without its children and its sibling
   // `footer` would change the tree, and the guard checks every fix alone.
   const code = vue('div\n     section\n       h1 Title\n       p\n          span text\n     footer\n           small x')
   for (const v of eslintVersions) {
     it(`every fix alone is safe (${v.label})`, async () => {
-      const config: Linter.Config[] = [{
-        files: ['**/*.vue'],
-        plugins: { 'vue-pug': { rules: { indent: rule } } },
-        languageOptions: { parser: vueParser, parserOptions: { templateTokenizer: { pug: tokenizerPath } } },
-        rules: { 'vue-pug/indent': 'warn' },
-      }]
       const { messages } = await lintText(v, code, config)
       expect(messages).toHaveLength(6)
       const drops: DropReason[] = []
@@ -168,4 +193,19 @@ describe('indent fixes and the guard', () => {
       expect(kept.every((m) => m.fix)).toBe(true)
     })
   }
+
+  // Every report carries the same fix; the guard must verify it once, not once per message.
+  it('lints and guards ~2000 misindented lines in linear time', async () => {
+    const pug = 'div\n' + Array.from({ length: 1000 }, (_, i) => `\tsection\n\t\tp(class="a${i}") text ${i}`).join('\n')
+    const big = vue(pug)
+    const v = eslintVersions.at(-1)!
+    const { messages } = await lintText(v, big, config)
+    expect(messages).toHaveLength(2000)
+    const t0 = performance.now()
+    const kept = guardMessages(big, messages)
+    const ms = performance.now() - t0
+    expect(kept.every((m) => m.fix)).toBe(true)
+    // Measured ~50 ms; the per-message (quadratic) verification took several seconds here.
+    expect(ms).toBeLessThan(1500)
+  })
 })

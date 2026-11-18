@@ -1,7 +1,10 @@
 // vue-pug/indent: the leading whitespace of every Pug template line. Node, attribute and
 // closing-paren lines get `unit × (depth + baseIndent)`; anchored lines (raw-block lines after the
-// first, continuation lines) keep their offset relative to their anchor line.
-import type { PugLine } from '@pug-lint/parser'
+// first, continuation lines) keep their offset relative to their anchor line. Lines starting inside
+// a string or template literal are left alone: their whitespace is part of the value.
+// All reports share one fix, so a single surviving report re-indents the whole span.
+import type { Attribute, PugDocument, PugLine, Range } from '@pug-lint/parser'
+import { literalSpans, walk } from '@pug-lint/parser'
 import { createPugRule } from '../utils/create-rule.ts'
 
 type Options = [indent: number | 'tab', { baseIndent: number }]
@@ -36,6 +39,28 @@ function shifted(line: PugLine, ws: string, anchorOld: string, anchorNew: string
   return char.repeat(Math.max(floor, ws.length + anchorNew.length - anchorOld.length))
 }
 
+// Vue parses these attribute values as JavaScript; any other value is the string itself.
+const isBound = (key: string): boolean => /^(?::|@|#|\.|v-)/.test(key)
+
+/** String and template literal spans of attribute values, mixin arguments and `&attributes(…)`, by start. */
+function stringSpans(doc: PugDocument, text: string): Range[] {
+  const spans: Range[] = []
+  const ofAttribute = ({ key, value }: Attribute): void => {
+    if (value === null) return
+    // A bound value written as one Pug string: the literals are those of the JavaScript inside it.
+    if (isBound(key.raw) && value.kind === 'string' && value.inner) spans.push(...literalSpans(text, value.inner))
+    else spans.push(...literalSpans(text, value.range))
+  }
+  walk(doc, (node) => {
+    if (node.type !== 'Tag' && node.type !== 'MixinCall' && node.type !== 'Filter') return
+    for (const block of node.attributeBlocks) block.attributes.forEach(ofAttribute)
+    if (node.type === 'Filter') return
+    for (const and of node.andAttributes) spans.push(...literalSpans(text, and.expression))
+    if (node.type === 'MixinCall' && node.args) spans.push(...literalSpans(text, node.args))
+  })
+  return spans.sort((a, b) => a[0] - b[0])
+}
+
 export default createPugRule<Options>({
   name: 'indent',
   meta: {
@@ -61,13 +86,20 @@ export default createPugRule<Options>({
     // The indentation each line has after this rule's fixes, by line index.
     const after: string[] = []
     const changes: { line: PugLine; ws: string; target: string }[] = []
+    // Literal spans do not overlap, and line starts only grow: one forward pass over both.
+    const spans = stringSpans(ctx.doc, text)
+    let s = 0
+    const inString = (offset: number): boolean => {
+      while (s < spans.length && spans[s]![1] <= offset) s++
+      return s < spans.length && spans[s]![0] < offset
+    }
     lines.forEach((line, k) => {
       const ws = text.slice(...line.indent)
       after[k] = ws
       if (line.kind === 'blank' || line.indent[1] === line.range[1]) return
       // Content on the `<template>` line has no leading whitespace of its own.
       if (line.indent[0] > 0 && text[line.indent[0] - 1] !== '\n' && text[line.indent[0] - 1] !== '\r') return
-      if (ctx.inErrorRegion(line.range)) return
+      if (ctx.inErrorRegion(line.range) || inString(line.range[0])) return
       const target = line.anchor === null
         ? unit.repeat(line.depth + baseIndent)
         : shifted(line, ws, text.slice(...lines[line.anchor]!.indent), after[line.anchor]!)

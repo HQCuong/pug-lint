@@ -96,3 +96,21 @@ export function skipExpression(
   }
   return end
 }
+
+/**
+ * The string ('…', "…") and template (`…`) literals of the expression text in `range`, each from
+ * its opening to just after its closing quote (to `range[1]` when unclosed). A template literal
+ * is one span, `${…}` included. Consumers use it to find text whose whitespace is a value.
+ */
+export function literalSpans(text: string, [start, end]: [number, number]): [number, number][] {
+  const spans: [number, number][] = []
+  for (let i = start; i < end; i++) {
+    const c = text[i]
+    if (c !== '"' && c !== "'" && c !== '`') continue
+    const close = c === '`' ? skipTemplate(text, i, end).end : skipString(text, i, end)
+    const stop = close < 0 ? end : close
+    spans.push([i, stop])
+    i = stop - 1
+  }
+  return spans
+}
