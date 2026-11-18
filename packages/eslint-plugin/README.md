@@ -50,6 +50,18 @@ Two configs are available, both for `**/*.vue`:
 Your own `languageOptions.parserOptions` (for example `parser` for TypeScript in `<script>`) are
 merged with the plugin's, so they keep working.
 
+`vue-pug/indent` puts top-level nodes at column 0 (`baseIndent: 0`, like Pug files). If your
+templates are written one level under `<template>`, set `baseIndent: 1`, or the rule moves them
+to column 0:
+
+```js
+export default [
+  ...pluginVue.configs['flat/recommended'],
+  ...vuePug.configs.recommended,
+  { files: ['**/*.vue'], rules: { 'vue-pug/indent': ['warn', 2, { baseIndent: 1 }] } },
+]
+```
+
 ### Plugin key
 
 The plugin is registered under the key `vue-pug`. All rule ids (`vue-pug/indent`, …) and the
@@ -101,7 +113,10 @@ file, Pug templates included, and the fix guard checks their fixes like any othe
 
 For each Pug template, a fix is applied only if the template still parses afterwards and its
 structure is unchanged: the tags and their nesting, each tag's class and id set and attribute count,
-and the shape of text and interpolations. Each fix is verified on its own, then the surviving fixes
+the shape of text and interpolations, and every piece of JavaScript that Pug compiles (unquoted and
+`${}` attribute values, `&attributes`, mixin arguments, code, control heads, `#{}`), up to its
+indentation. The parser reports what Pug itself rejects (for example a tab/space mix or a repeated
+attribute), so a fix that would introduce it is dropped too. Each fix is verified on its own, then the surviving fixes
 are verified again as the combined set that ESLint will apply. A fix that fails is dropped and its
 problem is still reported, so you can fix it by hand.
 
@@ -189,7 +204,13 @@ on every pass. `keepVueRules` does not apply to the crashing rules, which stay o
   string (`:x="f(\"a\")"`) may give a spurious Vue parse error.
 - **Unquoted and `${}` attribute values** (`a(href=url)`, ``a(title=`${x}`)``) are Pug
   compile-time expressions, not Vue bindings. They are passed to `vue/*` rules as plain attribute
-  values.
+  values, and the fix guard drops every fix that rewrites them.
+- **A value that starts with a quote must be one string.** `a(title="x" + y)` is valid Pug but is
+  reported as a parse error (`vue/no-parsing-error`), by design: write `a(title=("x" + y))` or
+  `a(:title="'x' + y")`.
+- **Lone CR line breaks.** In a template whose lines end with a lone `\r` (old Mac style), the
+  `vue-pug/*` rules report problems but do not fix them, and the tokenizer reports a parse error.
+  Convert the file to LF or CRLF.
 - **Some Pug syntax is reported as unsupported**, or parsed differently from Pug, by the parser:
   see [unsupported-syntax.md](https://github.com/HQCuong/pug-lint/blob/main/packages/pug-parser/docs/unsupported-syntax.md).
 - **Fix guard cost.** The guard parses the template again for each distinct fix, so its cost grows
@@ -199,6 +220,26 @@ on every pass. `keepVueRules` does not apply to the crashing rules, which stay o
 - **Partial fix sets.** The guard verifies the full set of surviving fixes. If ESLint applies only
   some of them (`--fix-type`, or a custom `fix` predicate in the Node.js API), that subset was not
   verified as a set.
+
+## Troubleshooting
+
+### `TypeError: Cannot read properties of null (reading 'type')` (or `'range'`)
+
+One of the `vue/*` rules that crash on Pug templates was turned back on by a config placed after
+`...vuePug.configs.recommended` (or `base`), for example a shared config or a `rules` entry that
+enables it. `configs.base` turns these off for every `.vue` file:
+
+<!-- begin auto-generated crashing rules -->
+
+- `vue/component-name-in-template-casing`
+- `vue/html-closing-bracket-newline` (Pug replacement: `vue-pug/attribute-parens-newline`)
+- `vue/html-closing-bracket-spacing` (Pug replacement: `vue-pug/attribute-parens-spacing`)
+- `vue/html-indent` (Pug replacement: `vue-pug/indent`)
+
+<!-- end auto-generated crashing rules -->
+
+Put `...vuePug.configs.recommended` after every config that enables them, or remove them from
+your own `rules`. Use the `vue-pug/*` replacement for Pug templates instead.
 
 ## Migrating from eslint-plugin-vue-pug
 

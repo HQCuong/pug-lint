@@ -13,8 +13,11 @@ The rule checks the leading whitespace of every line in a `<template lang="pug">
 - A tag, text, code or control line is indented by one unit per nesting level.
 - In a multi-line attribute block, attribute lines are one level deeper than the tag, and a line
   that starts with the closing `)` is at the tag's level.
-- Lines of a text block (`p.`, `pre.`, `script.`) after the first keep their offset relative to the
-  first line, so the block's own indentation is preserved when it moves.
+- Lines of a text block (`p.`, `pre.`, `script.`), comment, code block or filter after the first
+  keep their offset relative to the first line, so the block's own indentation is preserved when it
+  moves. When the indent character changes (spaces to tabs or back), a line indented less than the
+  first cannot keep its offset: it gets the first line's indentation, since mixing tabs and spaces
+  is a Pug syntax error.
 - Lines that start inside a string or template literal are never re-indented: their leading
   whitespace is part of the value.
 - Lines in a region the parser reports as an error are skipped.

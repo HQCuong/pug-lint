@@ -1,6 +1,7 @@
 // Generates the README's rule sections from the plugin itself, between marker comments:
-// the `vue-pug/*` rules table (from `plugin.rules`) and the lists of `vue/*` rules that are turned
-// off or suppressed inside Pug templates (from the generated compat lists).
+// the `vue-pug/*` rules table (from `plugin.rules`), the lists of `vue/*` rules that are turned
+// off or suppressed inside Pug templates, and the crashing rules in Troubleshooting (both from the
+// generated compat lists).
 // eslint-doc-generator is not used: it derives the rule prefix from the package name
 // (`@pug-lint/...` instead of `vue-pug/...`) and finds no recommended rules in our array configs.
 //
@@ -18,6 +19,7 @@ const readmeFile = new URL('../../README.md', import.meta.url)
 
 const RULES = ['<!-- begin auto-generated rules list -->', '<!-- end auto-generated rules list -->'] as const
 const VUE_RULES = ['<!-- begin auto-generated vue rule lists -->', '<!-- end auto-generated vue rule lists -->'] as const
+const CRASHING = ['<!-- begin auto-generated crashing rules -->', '<!-- end auto-generated crashing rules -->'] as const
 
 /** The `vue-pug/*` rules table. */
 export function renderRulesTable(rules: Record<string, Rule.RuleModule> = plugin.rules): string {
@@ -73,7 +75,12 @@ function replaceBetween(text: string, [begin, end]: readonly [string, string], c
 
 /** `readme` with every generated section brought up to date. */
 export function updateReadme(readme: string): string {
-  return replaceBetween(replaceBetween(readme, RULES, renderRulesTable()), VUE_RULES, renderVueRuleLists())
+  const sections: [readonly [string, string], string][] = [
+    [RULES, renderRulesTable()],
+    [VUE_RULES, renderVueRuleLists()],
+    [CRASHING, ruleList(Object.keys(vueCrashing))],
+  ]
+  return sections.reduce((text, [markers, content]) => replaceBetween(text, markers, content), readme)
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
