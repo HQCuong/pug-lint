@@ -33,7 +33,8 @@ const ELSE_IF = /^[ \t]+if(?=[ \t(:]|$)/
 // Keywords that may be followed directly by ':'. `when`/`default` take a block
 // expansion; `include:filter` names a filter; on a conditional Pug rejects it.
 const COLON_KEYWORDS = new Set(['when', 'default', 'include', 'if', 'unless', 'else'])
-const CONDITIONALS = new Set<ControlKeyword>(['if', 'unless', 'else', 'else if'])
+// Keywords whose head is a JS expression (or nothing) where Pug rejects a block expansion.
+const NO_EXPANSION = new Set<ControlKeyword>(['if', 'unless', 'else', 'else if', 'while', 'case', 'each', 'for'])
 const FILTER_HEAD = /:[\w-]+(?::[\w-]+)*/y
 
 /** A tag or mixin call and the nodes of its block expansion chain, outermost first. */
@@ -167,9 +168,13 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
     return { node, next }
   }
 
-  /** Index of the first ':' in `[s, e)` outside strings and brackets, or -1. */
-  function topLevelColon(s: number, e: number): number {
+  /**
+   * Index of the first ':' in `[s, e)` outside strings and brackets, or -1.
+   * `ternary`: a ':' that closes a top-level `?` (not `?.` / `??`) is skipped.
+   */
+  function topLevelColon(s: number, e: number, ternary = false): number {
     let depth = 0
+    let open = 0    // top-level `?` waiting for their ':'
     for (let i = s; i < e; i++) {
       const c = src[i]
       if (c === '"' || c === "'" || c === '`') {
@@ -180,8 +185,12 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
         depth++
       } else if (c === ')' || c === ']' || c === '}') {
         depth = Math.max(0, depth - 1)
+      } else if (ternary && c === '?' && depth === 0) {
+        if (src[i + 1] === '?' || (src[i + 1] === '.' && !/[0-9]/.test(src[i + 2] ?? ''))) i++
+        else open++
       } else if (c === ':' && depth === 0) {
-        return i
+        if (open === 0) return i
+        open--
       }
     }
     return -1
@@ -271,8 +280,11 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
       }
     }
     const node: Control = { type: 'Control', keyword, range: [start, end], head: trimmed(after, end), children: [] }
-    if (CONDITIONALS.has(keyword) && src[after] === ':') {
-      errors.push({ code: 'unsupported-syntax', message: `Block expansion is not allowed after "${keyword}"`, offset: after })
+    if (NO_EXPANSION.has(keyword)) {
+      const bad = topLevelColon(after, end, true)
+      if (bad >= 0) {
+        errors.push({ code: 'unsupported-syntax', message: `Block expansion is not allowed after "${keyword}"`, offset: bad })
+      }
     }
     const colon = keyword === 'when' || keyword === 'default' ? topLevelColon(after, end) : -1
     if (colon < 0) return { node, chain: [], last: index }

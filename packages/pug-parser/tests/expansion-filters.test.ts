@@ -131,6 +131,28 @@ describe('block expansion', () => {
     expect(doc.children.map((c) => asControl(c).keyword)).toEqual(['if', 'else', 'if', 'else if'])
   })
 
+  it('reports a colon after any conditional or loop head, spaced or after an expression', () => {
+    const lines = ['else : p', 'if : p', 'unless x: p', 'if x: p', 'else if x : p', 'while x: p', 'case x: p',
+      'each a in b: p', 'for a in b: p', "if (a ? b : c): p"]
+    const src = lines.join('\n')
+    const doc = parse(src)
+    let from = 0
+    const colons = lines.map((l) => {
+      const offset = from + (l.startsWith('if (') ? l.lastIndexOf(':') : l.indexOf(':'))
+      from += l.length + 1
+      return ['unsupported-syntax', offset]
+    })
+    expect(errorsOf(doc)).toEqual(colons)
+    expect(doc.children.every((c) => asControl(c).children.length === 0)).toBe(true)
+  })
+
+  it('does not flag colons inside a head expression', () => {
+    const src = "if a ? b : c\n  p\nunless x ? (y ? 1 : 2) : z\neach v in {a: 1}\nwhile a?.b ?? c ? d : e\nif a ? .5 : 1\ncase f({k: 'a:b'})"
+    const doc = parse(src)
+    expect(doc.errors).toEqual([])
+    expect(doc.children.map((c) => asControl(c).keyword)).toEqual(['if', 'unless', 'each', 'while', 'if', 'case'])
+  })
+
   it('reports expansion children and forms it does not support', () => {
     const src = 'p: :markdown text\nli: | x\n+m: p\nimg/: x\nli:\nli(x):b\nwhen 1:\nli: if x\nwhen 2: each x in y'
     const doc = parse(src)

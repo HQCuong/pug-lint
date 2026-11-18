@@ -34,7 +34,7 @@ parser reports them with this code too.
 
 | Form | Example | Notes |
 | --- | --- | --- |
-| Block expansion after a conditional | `else: p`, `if: p`, `unless: p`, `else if: p` | Invalid Pug. Expansion works after `when` and `default`: `when 1: p a`. |
+| Block expansion after a conditional or loop | `else: p`, `else : p`, `if x: p`, `unless x: p`, `else if x: p`, `while x: p`, `case x: p`, `each a in b: p`, `for a in b: p` | Invalid Pug. Reported at the first `:` of the head outside strings and brackets that does not close a top-level `?` (so `if a ? b : c` and `each v in {a: 1}` are fine). Expansion works after `when` and `default`: `when 1: p a`. |
 
 ## Filters
 
