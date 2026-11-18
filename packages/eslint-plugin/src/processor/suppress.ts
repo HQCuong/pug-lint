@@ -18,7 +18,20 @@ function startOffset(index: LineIndex, message: Linter.LintMessage): number | nu
 
 const inside = (offset: number, ranges: Range[]): boolean => ranges.some(([start, end]) => start <= offset && offset < end)
 
-/** `messages` without those whose `ruleId` is in `suppress` and whose start lies inside a Pug template. */
+/**
+ * True when `[a, b]` (in either order: a misreporting rule can emit an inverted range) overlaps a
+ * range; a zero-width range overlaps when it lies within one, edges included.
+ */
+function intersects([a, b]: Range, ranges: Range[]): boolean {
+  const lo = Math.min(a, b)
+  const hi = Math.max(a, b)
+  return ranges.some(([start, end]) => (lo === hi ? start <= lo && lo <= end : lo < end && hi > start))
+}
+
+/**
+ * `messages` without those whose `ruleId` is in `suppress` and whose start lies inside a Pug
+ * template, or whose fix range intersects one (a rule can misplace the report but not the fix).
+ */
 export function suppressMessages(
   rawText: string,
   messages: Linter.LintMessage[],
@@ -31,6 +44,7 @@ export function suppressMessages(
   const index = createLineIndex(text)
   return messages.filter((m) => {
     if (m.ruleId === null || !suppress.has(m.ruleId)) return true
+    if (m.fix && intersects(m.fix.range, ranges)) return false
     const offset = startOffset(index, m)
     return offset === null || !inside(offset, ranges)
   })

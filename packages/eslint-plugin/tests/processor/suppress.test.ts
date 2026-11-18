@@ -48,6 +48,33 @@ describe('suppressMessages', () => {
   })
 })
 
+describe('suppressMessages by fix range', () => {
+  // Located in <script> (line 6), but its fix reaches into the template.
+  const template = [text.indexOf('div'), text.indexOf('</template>')] as const
+  const script = text.indexOf('foo')
+  const withFix = (ruleId: string, range: [number, number]): Linter.LintMessage =>
+    ({ ...msg(ruleId, 6), fix: { range, text: '\n' } })
+
+  it('removes a suppressed rule whose fix range intersects the template, even inverted', () => {
+    expect(suppressMessages(text, [withFix('vue/html-indent', [script, template[0] + 1])], suppress)).toEqual([])
+    expect(suppressMessages(text, [withFix('vue/html-indent', [template[0] + 1, script])], suppress)).toEqual([])
+  })
+
+  it('removes a suppressed rule whose zero-width fix lies inside the template', () => {
+    expect(suppressMessages(text, [withFix('vue/html-indent', [template[1], template[1]])], suppress)).toEqual([])
+  })
+
+  it('keeps a suppressed rule whose fix stays outside the template', () => {
+    const outside = withFix('vue/html-indent', [script, script + 3])
+    expect(suppressMessages(text, [outside], suppress)).toEqual([outside])
+  })
+
+  it('keeps other rules whose fix reaches into the template', () => {
+    const other = withFix('vue/other', [script, template[0] + 1])
+    expect(suppressMessages(text, [other], suppress)).toEqual([other])
+  })
+})
+
 describe('suppressMessages with a BOM', () => {
   it('locates messages on the BOM-stripped text', () => {
     // Line 1, column 22 is the first content offset (just after `>`) of the BOM-stripped text.

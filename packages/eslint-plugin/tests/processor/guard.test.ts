@@ -280,4 +280,49 @@ describe('guardMessages', () => {
     guardMessages(text, [fixMsg(text, ')', '')], onDrop)
     expect(onDrop).toHaveBeenCalledTimes(1)
   })
+
+  describe('malformed fix ranges (anywhere in the file)', () => {
+    const text = body('p Hello', '<script>\nfoo\n</script>\n')
+    const scriptAt = at(text, 'foo')
+    const templateAt = at(text, 'Hello')
+
+    it.each<[string, Rule.Fix['range']]>([
+      ['inverted, from <script> back into the template', [scriptAt[0], templateAt[0]]],
+      ['inverted, inside <script>', [scriptAt[1], scriptAt[0]]],
+      ['negative start', [-1, 2]],
+      ['past the end of the text', [scriptAt[0], text.length + 1]],
+      ['non-integer', [scriptAt[0], scriptAt[0] + 0.5]],
+    ])('drops the fix and keeps the message: %s', (_name, range) => {
+      const message = rangeMsg(text, [scriptAt[0], scriptAt[1]], 'x')
+      message.fix = { range, text: '\n' }
+      const valid = fixMsg(text, 'foo', 'bar')
+      const { result, drops } = guard(text, [message, valid])
+      expect(result[0]!.fix).toBeUndefined()
+      expect(result[0]!.message).toBe('m')
+      expect(result[1]).toBe(valid)
+      expect(drops).toEqual([[message, 'malformed']])
+    })
+
+    it('drops a malformed fix in a file without a Pug template', () => {
+      const html = '<template><div/></template>\n'
+      const message = rangeMsg(html, [5, 2], '')
+      const { result, reasons } = guard(html, [message])
+      expect(result[0]!.fix).toBeUndefined()
+      expect(reasons).toEqual(['malformed'])
+    })
+
+    it('removes a malformed suggestion and keeps the others', () => {
+      const ok: Linter.LintSuggestion = { desc: 'ok', fix: { range: scriptAt, text: 'bar' } }
+      const badSuggestion: Linter.LintSuggestion = { desc: 'bad', fix: { range: [scriptAt[1], scriptAt[0]], text: '' } }
+      const message: Linter.LintMessage = { ruleId: 'x/y', message: 'm', severity: 1, line: 5, column: 1, suggestions: [ok, badSuggestion] }
+      const { result, drops } = guard(text, [message])
+      expect(result[0]!.suggestions).toEqual([ok])
+      expect(drops).toEqual([[message, 'malformed']])
+    })
+
+    it('keeps well-formed fixes at the very end of the text', () => {
+      const message = rangeMsg(text, [text.length, text.length], '\n')
+      expect(guard(text, [message]).drops).toEqual([])
+    })
+  })
 })

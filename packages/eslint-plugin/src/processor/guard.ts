@@ -14,7 +14,7 @@ import {
 } from '../shared/templates.ts'
 import { applyFixes } from './apply-fixes.ts'
 
-export type DropReason = 'parse-error' | 'structure' | 'boundary' | 'broken-template' | 'combined'
+export type DropReason = 'malformed' | 'parse-error' | 'structure' | 'boundary' | 'broken-template' | 'combined'
 
 type Placement = 'outside' | 'inside' | 'boundary'
 
@@ -53,18 +53,50 @@ const sameRanges = (a: readonly Range[], b: readonly Range[]): boolean =>
 
 const stripBom = (text: string): string => (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text)
 
+/** A fix ESLint cannot apply: non-integer, negative, inverted, or past the end of `text`. */
+const malformed = ({ range: [start, end] }: Rule.Fix, text: string): boolean =>
+  !Number.isInteger(start) || !Number.isInteger(end) || start < 0 || start > end || end > text.length
+
+/**
+ * `messages` without malformed fixes and suggestions, anywhere in the file. ESLint skips such a
+ * fix, but a message that still carries one keeps its fix loop going (circular-fix warnings).
+ */
+function dropMalformed(
+  text: string,
+  messages: Linter.LintMessage[],
+  onDrop?: (m: Linter.LintMessage, reason: DropReason) => void,
+): Linter.LintMessage[] {
+  const bad = (fix: Rule.Fix | undefined): boolean => fix !== undefined && malformed(fix, text)
+  if (!messages.some((m) => bad(m.fix) || m.suggestions?.some((s) => bad(s.fix)))) return messages
+  return messages.map((m) => {
+    const fixBad = bad(m.fix)
+    const suggestions = m.suggestions?.filter((s) => !bad(s.fix))
+    if (!fixBad && suggestions?.length === m.suggestions?.length) return m
+    const copy: Linter.LintMessage = { ...m }
+    if (fixBad) {
+      onDrop?.(m, 'malformed')
+      delete copy.fix
+    }
+    for (let i = suggestions?.length ?? 0; i < (m.suggestions?.length ?? 0); i++) onDrop?.(m, 'malformed')
+    if (suggestions && suggestions.length > 0) copy.suggestions = suggestions
+    else delete copy.suggestions
+    return copy
+  })
+}
+
 /**
  * `messages` with every unsafe template fix and suggestion removed (Design §3, guard algorithm).
  * Fixes entirely outside the Pug templates are untouched. `onDrop` is called once per dropped
  * fix or suggestion, with the original message. `text` may carry a BOM; fix ranges refer to
- * the BOM-stripped text, as in ESLint.
+ * the BOM-stripped text, as in ESLint. Malformed fix ranges are dropped anywhere in the file (`malformed`).
  */
 export function guardMessages(
   rawText: string,
-  messages: Linter.LintMessage[],
+  inputMessages: Linter.LintMessage[],
   onDrop?: (m: Linter.LintMessage, reason: DropReason) => void,
 ): Linter.LintMessage[] {
   const text = stripBom(rawText)
+  const messages = dropMalformed(text, inputMessages, onDrop)
   const templates = getPugTemplates(text).map((t) => t.range)
   if (templates.length === 0) return messages
   const touches = (fix: Rule.Fix | undefined): boolean => fix !== undefined && place(fix.range, templates) !== 'outside'
@@ -118,14 +150,16 @@ export function guardMessages(
   }
 
   return messages.map((m, index) => {
+    // onDrop always receives the caller's message, not a copy made by dropMalformed.
+    const original = inputMessages[index]!
     const fixReason = fixDrops.get(index)
-    if (fixReason) onDrop?.(m, fixReason)
+    if (fixReason) onDrop?.(original, fixReason)
     // Step 7: each suggestion on its own.
     let suggestions = m.suggestions
     if (suggestions?.some((s) => touches(s.fix))) {
       const safe = suggestions.filter((s) => {
         const reason = check(s.fix)
-        if (reason) onDrop?.(m, reason)
+        if (reason) onDrop?.(original, reason)
         return reason === null
       })
       if (safe.length < suggestions.length) suggestions = safe

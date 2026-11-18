@@ -73,6 +73,23 @@ const strong = createPugRule<[]>({
   },
 })
 
+// Reports every tag head that does not touch an error region.
+const reliableTags = createPugRule<[]>({
+  name: 'test-error-region',
+  meta: {
+    type: 'suggestion',
+    docs: { description: 'test rule', recommended: false },
+    schema: [],
+    messages: { tag: 'Tag.' },
+  },
+  defaultOptions: [],
+  check(ctx) {
+    walk(ctx.doc, (node) => {
+      if (node.type === 'Tag' && !ctx.inErrorRegion(node.range)) ctx.report({ range: node.range, messageId: 'tag' })
+    })
+  },
+})
+
 describe('createPugRule', () => {
   it('fills docs.url and defaultOptions', () => {
     expect(tagNames.meta?.docs?.url).toBe(
@@ -94,9 +111,9 @@ runRule('test-tag-names', tagNames, {
       pug: 'div\n  p\n\n  span.x hi',
       crlf: true,
       errors: [
-        { messageId: 'tag', line: 2, column: 1 },
-        { messageId: 'tag', line: 3, column: 3 },
-        { messageId: 'tag', line: 5, column: 3 },
+        { messageId: 'tag', line: 2, column: 1, endLine: 2, endColumn: 4 },
+        { messageId: 'tag', line: 3, column: 3, endLine: 3, endColumn: 4 },
+        { messageId: 'tag', line: 5, column: 3, endLine: 5, endColumn: 7 },
       ],
     },
     {
@@ -114,6 +131,28 @@ runRule('test-strong', strong, {
     { pug: 'p\n  b x', output: 'p\n  strong x', errors: [{ messageId: 'strong', line: 3, column: 3 }] },
     { name: 'same output twice', pug: 'p\n  b x', options: [], output: 'p\n  strong x', errors: [{ messageId: 'strong' }] },
     { name: 'CRLF output', pug: 'p\n  b x', crlf: true, output: 'p\n  strong x', errors: [{ messageId: 'strong', line: 3, column: 3 }] },
+  ],
+})
+
+runRule('test-error-region', reliableTags, {
+  valid: [],
+  invalid: [
+    {
+      name: 'skips the line holding an error and the continuation lines of its recovery region',
+      // The unclosed '(' makes every later line part of the recovery region.
+      pug: 'div\n  a(href="x" title=\n  b\nem',
+      errors: [{ messageId: 'tag', line: 2 }],
+    },
+    {
+      name: 'skips only the line holding an error',
+      pug: 'div\n  p(x="1" y=)\n  em',
+      errors: [{ messageId: 'tag', line: 2 }, { messageId: 'tag', line: 4 }],
+    },
+    {
+      name: 'multi-line attribute blocks and values without errors are reliable',
+      pug: 'a(\n  x="1"\n  :y="{\n    a: 1\n  }"\n)\nb',
+      errors: [{ messageId: 'tag', line: 2, endLine: 7 }, { messageId: 'tag', line: 8 }],
+    },
   ],
 })
 
