@@ -39,6 +39,8 @@ corpus.push(['Shapes.vue', vue([
   '    const a = 1',
   '| root text',
 ].join('\n'))])
+// A registered component in the wrong casing: vue/component-name-in-template-casing's fixer reads the end tag's first token.
+corpus.push(['Casing.vue', vue('div\n  my-button Save', '<script>\nexport default { components: { MyButton: {} } }\n</script>\n')])
 
 const vueRecommended = pluginVue.configs['flat/recommended'] as Linter.Config[]
 const allVueRules = Object.keys(pluginVue.rules as Record<string, Rule.RuleModule>).map((name) => `vue/${name}`)

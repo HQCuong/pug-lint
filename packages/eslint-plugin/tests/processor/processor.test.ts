@@ -104,15 +104,15 @@ describe('createProcessor', () => {
   })
 
   it('suppresses incompatible vue rules inside the template unless kept', () => {
-    const indent: Linter.LintMessage = { ruleId: 'vue/html-indent', message: 'm', severity: 1, line: 2, column: 1 }
+    const report: Linter.LintMessage = { ruleId: 'vue/max-attributes-per-line', message: 'm', severity: 1, line: 2, column: 1 }
     const run = (keepVueRules: string[]) => {
       const { inner } = fakeInner()
       const processor = createProcessor({ inner, keepVueRules })
       processor.preprocess!(code, 'A.vue')
-      return processor.postprocess!([[indent]], 'A.vue')
+      return processor.postprocess!([[report]], 'A.vue')
     }
     expect(run([])).toEqual([])
-    expect(run(['vue/html-indent'])).toEqual([indent])
+    expect(run(['vue/max-attributes-per-line'])).toEqual([report])
   })
 
   it('wraps eslint-plugin-vue\'s processor by default', () => {

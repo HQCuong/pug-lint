@@ -21,7 +21,9 @@
   "scripts": {
     "build": "tsdown",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "compat": "pnpm -w run build && node tools/compat/run.ts",
+    "compat:check": "pnpm -w run build && node tools/compat/run.ts --check"
   },
   "dependencies": {
     "@pug-lint/parser": "workspace:*"
