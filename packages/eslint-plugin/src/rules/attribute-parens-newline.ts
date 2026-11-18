@@ -3,26 +3,15 @@
 // `always` requires both breaks in a multiline block; `never` forbids them; a block that is not
 // multiline never has them. Same-line spaces in a gap without a break belong to
 // vue-pug/attribute-parens-spacing; an empty block is left alone.
-import type { AttributeBlock, PugLine, Range } from '@pug-lint/parser'
+import type { AttributeBlock, Range } from '@pug-lint/parser'
 import { walk } from '@pug-lint/parser'
 import { createPugRule } from '../utils/create-rule.ts'
+import { depthAt } from '../utils/depth-at.ts'
 
 type Options = [{ multiline: 'always' | 'never' }]
 
 const isSpace = (c: string | undefined): boolean => c !== undefined && /\s/.test(c)
 const hasLineBreak = (s: string): boolean => /[\r\n]/.test(s)
-
-/** The depth of the line holding `offset` (0 when no line holds it). */
-function depthAt(lines: readonly PugLine[], offset: number): number {
-  let lo = 0
-  let hi = lines.length
-  while (lo < hi) {
-    const mid = (lo + hi) >> 1
-    if (lines[mid]!.range[0] <= offset) lo = mid + 1
-    else hi = mid
-  }
-  return lo > 0 ? lines[lo - 1]!.depth : 0
-}
 
 export default createPugRule<Options>({
   name: 'attribute-parens-newline',

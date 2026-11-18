@@ -3,7 +3,8 @@ div.page#root(class="a b")
   header
     h1(class='title'   :title="t") {{ t }}
   MyButton(
-    type='button' :disabled="busy"
+    type='button'
+    :disabled="busy"
     @click="go"
   )/
   ul
