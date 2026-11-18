@@ -4,7 +4,7 @@ const restrictedMessage = 'public API only — see Global Constraints'
 
 export default tseslint.config(
   {
-    ignores: ['**/node_modules/**', '**/dist/**', 'docs/**', 'examples/.tmp-vue-pug/**'],
+    ignores: ['**/node_modules/**', '**/dist/**', 'docs/**', 'examples/**'],
   },
   ...tseslint.configs.recommended,
   {
