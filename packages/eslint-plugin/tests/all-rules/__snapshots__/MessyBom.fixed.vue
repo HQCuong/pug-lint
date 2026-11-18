@@ -1,5 +1,5 @@
 ﻿<template lang="pug">
-div.page#root(class="a b")
+.page#root(class="a b")
   header
     h1(class="title" :title="t") {{ t }}
   MyButton(

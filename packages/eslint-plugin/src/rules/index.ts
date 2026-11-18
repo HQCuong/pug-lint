@@ -5,6 +5,7 @@ import attributeEqualsSpacing from './attribute-equals-spacing.ts'
 import attributeParensNewline from './attribute-parens-newline.ts'
 import attributeParensSpacing from './attribute-parens-spacing.ts'
 import attributeQuotes from './attribute-quotes.ts'
+import implicitDiv from './implicit-div.ts'
 import indent from './indent.ts'
 import maxAttributesPerLine from './max-attributes-per-line.ts'
 import noMultiSpaces from './no-multi-spaces.ts'
@@ -16,6 +17,7 @@ export const rules: Record<string, Rule.RuleModule> = {
   'attribute-parens-newline': attributeParensNewline,
   'attribute-parens-spacing': attributeParensSpacing,
   'attribute-quotes': attributeQuotes,
+  'implicit-div': implicitDiv,
   indent,
   'max-attributes-per-line': maxAttributesPerLine,
   'no-multi-spaces': noMultiSpaces,

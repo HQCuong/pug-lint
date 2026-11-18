@@ -1,7 +1,7 @@
 <template lang="pug">
-div.card
-  div#main.body
-    div.row(v-if="ok")
+.card
+  #main.body
+    .row(v-if="ok")
       Foo/
       img(src="/x.png")/
       br/
