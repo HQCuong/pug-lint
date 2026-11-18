@@ -282,6 +282,50 @@ describe('PugTokenizer', () => {
     }
   })
 
+  it('nests a block expansion child in its parent element', () => {
+    const code = vue('li: a(v-if="x")')
+    const body = templateBody(parseVue(code))
+    expect(body.errors).toEqual([])
+    const [li] = elements(body)
+    expect(li!.name).toBe('li')
+    const [a] = elements(li!)
+    expect(a!.name).toBe('a')
+    const vIf = a!.startTag.attributes[0]!
+    expect(isDirective(vIf) && vIf.key.name.name).toBe('if')
+  })
+
+  it('emits a control head with a block expansion without overlapping the child', () => {
+    const code = vue('div\n  case x\n    when 1: p a\n    default: +m(1) b')
+    const body = templateBody(parseVue(code))
+    expect(body.errors).toEqual([])
+    expect(elements(elements(body)[0]!).map((e) => e.name)).toEqual(['p'])
+    const values = (type: string): string[] => body.tokens.filter((t) => t.type === type).map((t) => t.value)
+    expect(values('PugControl')).toEqual(['case x', 'when 1:', 'default:'])
+    expect(values('PugMixinCall')).toEqual(['+m(1)'])
+    for (let i = 1; i < body.tokens.length; i++) {
+      expect(body.tokens[i]!.range[0]).toBeGreaterThanOrEqual(body.tokens[i - 1]!.range[1])
+    }
+  })
+
+  it('emits filter text as plain text with no mustaches', () => {
+    // At the template root text is a token only (see above), so no VText there.
+    const root = vue(':markdown\n  {{ not vue }}')
+    const rootBody = templateBody(parseVue(root))
+    expect(rootBody.errors).toEqual([])
+    expect(allNodes(rootBody as unknown as AnyNode).filter((n) => n.type === 'VExpressionContainer')).toHaveLength(0)
+    expect(rootBody.tokens.find((t) => t.type === 'PugFilter')!.value).toBe(':markdown')
+    expect(rootBody.tokens.find((t) => t.range[0] === at(root, '{{')[0])).toMatchObject({ type: 'HTMLText', value: '{{ not vue }}' })
+
+    const code = vue('div\n  :markdown(x="1")\n    {{ not vue }}')
+    const body = templateBody(parseVue(code))
+    expect(body.errors).toEqual([])
+    const [div] = elements(body)
+    expect(kids(div!).map((c) => c.type)).toEqual(['VText'])
+    expect((kids(div!)[0] as AST.VText).value).toBe('{{ not vue }}')
+    expect(allNodes(body as unknown as AnyNode).filter((n) => n.type === 'VExpressionContainer')).toHaveLength(0)
+    expect(body.tokens.find((t) => t.type === 'PugFilter')!.value).toBe(':markdown(x="1")')
+  })
+
   it('treats lang="jade" like lang="pug" (Jade.vue vs Basic.vue)', () => {
     // The template's content: the `lang` attribute itself is not shifted uniformly.
     const content = (file: string, shift: number): string[] =>

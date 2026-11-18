@@ -142,7 +142,8 @@ const MIXIN_NAME = /[-\w]+/y
 // As in pug-lexer: a first paren group that starts like `key=` holds attributes, not arguments.
 const LOOKS_LIKE_ATTRIBUTES = /^\s*[-\w]+ *=/
 const AND_ATTRIBUTES = '&attributes('
-const UNCLOSED = new Set(['unclosed-attributes', 'unterminated-string'])
+/** Error codes meaning a block was not closed before its limit. */
+export const UNCLOSED = new Set(['unclosed-attributes', 'unterminated-string'])
 
 /** Match a sticky regex at `pos` of `s`. */
 function matchAt(re: RegExp, s: string, pos: number): string | null {

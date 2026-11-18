@@ -1,9 +1,12 @@
 import type {
-  Code, Comment, Control, ControlKeyword, MixinCall, PugDocument, PugLine, PugNode, PugParseError, Range, Tag, Text,
+  AttributeBlock, Code, Comment, Control, ControlKeyword, Filter, MixinCall, PugDocument, PugLine, PugNode, PugParseError,
+  Range, Tag, Text,
 } from './ast.ts'
-import { isWhitespace } from './expression.ts'
-import { type MixinHead, parseMixinHead, parseTagHead, type TagHead } from './parse-attributes.ts'
-import { makeText, parseInlineText } from './parse-text.ts'
+import { isWhitespace, skipString, skipTemplate } from './expression.ts'
+import {
+  type MixinHead, parseAttributeBlock, parseMixinHead, parseTagHead, type TagHead, UNCLOSED,
+} from './parse-attributes.ts'
+import { codeNode, makeText, parseInlineText, rawText, unsupported } from './parse-text.ts'
 import { type RawLine, scanLines } from './scanner.ts'
 
 export interface ParseOptions {
@@ -26,7 +29,15 @@ const isDeeper = (inner: string, outer: string): boolean => inner.length > outer
 const PAREN_KEYWORDS = new Set(['if', 'unless', 'while', 'each', 'for', 'case', 'when', 'else'])
 const WORD_KEYWORDS = new Set(['block', 'default', 'include', 'extends', 'yield', 'mixin', 'append', 'prepend', 'doctype'])
 const KEYWORD = /[a-z]+/y
-const ELSE_IF = /^[ \t]+if(?=[ \t(]|$)/
+const ELSE_IF = /^[ \t]+if(?=[ \t(:]|$)/
+// Keywords that may be followed directly by ':'. `when`/`default` take a block
+// expansion; `include:filter` names a filter; on a conditional Pug rejects it.
+const COLON_KEYWORDS = new Set(['when', 'default', 'include', 'if', 'unless', 'else'])
+const CONDITIONALS = new Set<ControlKeyword>(['if', 'unless', 'else', 'else if'])
+const FILTER_HEAD = /:[\w-]+(?::[\w-]+)*/y
+
+/** A tag or mixin call and the nodes of its block expansion chain, outermost first. */
+type Chain = (Tag | MixinCall)[]
 
 /** A node whose `children` take the lines nested under it. */
 const isParent = (node: PugNode | null): node is Tag | MixinCall | Control | Code =>
@@ -138,15 +149,6 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
     return [s, e]
   }
 
-  /** The `- x`, `= x` or `!= x` code whose operator starts at `start`, through `end`. */
-  function codeNode(start: number, end: number): Code {
-    const op = src[start] === '-' ? '-' : src[start] === '=' ? '=' : '!='
-    return {
-      type: 'Code', buffered: op !== '-', escaped: op === '=', range: [start, end],
-      expression: trimmed(start + op.length, end), children: [],
-    }
-  }
-
   /**
    * The `-` code line on raw[index]. A `-` alone on its line starts a code
    * block: the deeper lines are `raw` lines and form the expression. Returns
@@ -154,7 +156,7 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
    */
   function parseCodeLine(index: number, indent: string, depth: number): { node: Code; next: number } {
     const line = raw[index]!
-    const node = codeNode(line.indent[1], line.range[1])
+    const node = codeNode(src, line.indent[1], line.range[1])
     if (node.expression[0] < node.expression[1]) return { node, next: index + 1 }
     let first: number | null = null
     const next = rawBlock(index + 1, indent, depth, (l) => {
@@ -165,14 +167,101 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
     return { node, next }
   }
 
-  /** The control line starting at `start` (ending at `end`), or null when its first word is not a keyword. */
-  function parseControl(start: number, end: number): Control | null {
+  /** Index of the first ':' in `[s, e)` outside strings and brackets, or -1. */
+  function topLevelColon(s: number, e: number): number {
+    let depth = 0
+    for (let i = s; i < e; i++) {
+      const c = src[i]
+      if (c === '"' || c === "'" || c === '`') {
+        const j = c === '`' ? skipTemplate(src, i, e).end : skipString(src, i, e)
+        if (j < 0) return -1
+        i = j - 1
+      } else if (c === '(' || c === '[' || c === '{') {
+        depth++
+      } else if (c === ')' || c === ']' || c === '}') {
+        depth = Math.max(0, depth - 1)
+      } else if (c === ':' && depth === 0) {
+        return i
+      }
+    }
+    return -1
+  }
+
+  /**
+   * Start of the block expansion child after the ':' at `colon` on raw[index]:
+   * Pug's form is ':' and one or more spaces. Otherwise reported as
+   * unsupported and -1.
+   */
+  function expansionStart(colon: number, index: number): number {
+    const end = raw[index]!.range[1]
+    let s = colon + 1
+    while (s < end && (src[s] === ' ' || src[s] === '\t')) s++
+    if (src[colon + 1] === ' ' && s < end) return s
+    errors.push(unsupported(src, colon, end))
+    return -1
+  }
+
+  /**
+   * The tag or mixin call starting at `start` on raw[index] and its block
+   * expansion chain (`li: a: span`), outermost first: each next node is
+   * `children[0]` of the one before, whose `expansion` is the ':'. Every node
+   * of the chain ends where the chain ends. A loop, not recursion, so a long
+   * chain cannot overflow the stack. Empty when no tag starts at `start`.
+   * `child`: `start` is itself an expansion child (of a Control).
+   */
+  function parseChain(start: number, index: number, child = false): { chain: Chain; last: number } {
+    const chain: Chain = []
+    let last = index
+    let s = start
+    let colon = -1
+    for (;;) {
+      const lineEnd = raw[last]!.range[1]
+      if ((child || chain.length > 0) && keywordAt(s, lineEnd)) {
+        // A control child (`li: if x`) is not modelled; never read it as a tag.
+        errors.push(unsupported(src, s, lineEnd))
+        break
+      }
+      const one = parseTag(s, last)
+      if (!one.node) break
+      const prev = chain[chain.length - 1]
+      if (prev?.type === 'Tag') {
+        prev.expansion = [colon, colon + 1]
+        prev.children.push(one.node)
+      }
+      chain.push(one.node)
+      last = one.last
+      colon = one.colon
+      if (colon < 0 || (s = expansionStart(colon, last)) < 0) break
+    }
+    const end = raw[last]!.range[1]
+    for (const node of chain) node.range = [node.range[0], end]
+    return { chain, last }
+  }
+
+  /** The control keyword starting at `start` (in a line ending at `end`), or null when there is none. */
+  function keywordAt(start: number, end: number): string | null {
     KEYWORD.lastIndex = start
     const word = KEYWORD.exec(src)?.[0]
     if (!word || !(PAREN_KEYWORDS.has(word) || WORD_KEYWORDS.has(word))) return null
+    const c = start + word.length < end ? src[start + word.length] : ''
+    const follows = c === '' || c === ' ' || c === '\t' || (c === '(' && PAREN_KEYWORDS.has(word))
+      || (c === ':' && COLON_KEYWORDS.has(word))
+    return follows ? word : null
+  }
+
+  /**
+   * The control line on raw[index], or null when its first word is not a
+   * keyword. `when`/`default` may end in a block expansion (`when 1: p a`): its
+   * chain follows the Control in `chain`, and `last` is the raw index of the
+   * line it ends on.
+   */
+  function parseControl(index: number): { node: Control; chain: Chain; last: number } | null {
+    const line = raw[index]!
+    const start = line.indent[1]
+    const end = line.range[1]
+    const word = keywordAt(start, end)
+    if (!word) return null
     let after = start + word.length
-    const c = after < end ? src[after] : ''
-    if (!(c === '' || c === ' ' || c === '\t' || (c === '(' && PAREN_KEYWORDS.has(word)))) return null
     let keyword = word as ControlKeyword
     if (word === 'else') {
       const elseIf = ELSE_IF.exec(src.slice(after, end))
@@ -181,19 +270,31 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
         after += elseIf[0].length
       }
     }
-    return { type: 'Control', keyword, range: [start, end], head: trimmed(after, end), children: [] }
+    const node: Control = { type: 'Control', keyword, range: [start, end], head: trimmed(after, end), children: [] }
+    if (CONDITIONALS.has(keyword) && src[after] === ':') {
+      errors.push({ code: 'unsupported-syntax', message: `Block expansion is not allowed after "${keyword}"`, offset: after })
+    }
+    const colon = keyword === 'when' || keyword === 'default' ? topLevelColon(after, end) : -1
+    if (colon < 0) return { node, chain: [], last: index }
+    node.head = trimmed(after, colon)
+    const childStart = expansionStart(colon, index)
+    if (childStart < 0) return { node, chain: [], last: index }
+    const expansion = parseChain(childStart, index, true)
+    node.children.push(...expansion.chain.slice(0, 1))
+    node.range = [start, raw[expansion.last]!.range[1]]
+    return { node, chain: expansion.chain, last: expansion.last }
   }
 
   /**
-   * The tag or mixin call (`+name…`) on raw[index]; `last` is the raw index of
-   * the head's last line (a multi-line attribute block). An unclosed block is
-   * re-read within its first line, so it never swallows the lines after it. The
-   * rest of the head's last line is inline text after a space, `=`/`!=` code, a
-   * text-block '.' (tags only), or else unsupported.
+   * The tag or mixin call (`+name…`) starting at `start` on raw[index]; `last`
+   * is the raw index of the line it ends on (a multi-line attribute block). An
+   * unclosed block is re-read within its first line, so it never swallows the
+   * lines after it. The rest of the last line is inline text after a space,
+   * `=`/`!=` code, a text-block '.' (tags only), a block expansion ':' (tags
+   * without '/' only; `colon` is its offset, else -1), or else unsupported.
    */
-  function parseTag(index: number): { node: Tag | MixinCall | null; last: number } {
+  function parseTag(start: number, index: number): { node: Tag | MixinCall | null; last: number; colon: number } {
     const line = raw[index]!
-    const start = line.indent[1]
     const read = (limit: number): TagHead | MixinHead =>
       (src[start] === '+' && parseMixinHead(src, start, limit)) || parseTagHead(src, start, limit)
     let head = read(docEnd)
@@ -206,6 +307,7 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
     const isNode = mixin || head.name !== null || head.shorthands.length > 0
     const tailChildren: PugNode[] = []
     let dot: Range | null = null
+    let colon = -1
     const pos = head.pos
     if (pos < end) {
       if (isNode && src[pos] === ' ') {
@@ -213,42 +315,75 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
         errors.push(...inline.errors)
         if (inline.node) tailChildren.push(inline.node)
       } else if (isNode && (src[pos] === '=' || src.startsWith('!=', pos))) {
-        tailChildren.push(codeNode(pos, end))
+        tailChildren.push(codeNode(src, pos, end))
       } else if (isNode && !mixin && src[pos] === '.' && /^[ \t]*$/.test(src.slice(pos + 1, end))) {
         dot = [pos, pos + 1]
+      } else if (isNode && !mixin && !head.selfClose && src[pos] === ':') {
+        colon = pos
       } else {
-        errors.push({
-          code: 'unsupported-syntax',
-          message: `Unsupported syntax: ${JSON.stringify(src.slice(pos, end))}`,
-          offset: pos,
-        })
+        errors.push(unsupported(src, pos, end))
       }
     }
     const { name, shorthands, attributeBlocks, andAttributes, selfClose } = head
+    let node: Tag | MixinCall
     if ('mixinName' in head) {
-      return {
-        node: {
-          type: 'MixinCall', range: [start, end], name: head.mixinName, args: head.args,
-          shorthands, attributeBlocks, andAttributes, children: tailChildren,
-        },
-        last,
+      node = {
+        type: 'MixinCall', range: [start, end], name: head.mixinName, args: head.args,
+        shorthands, attributeBlocks, andAttributes, children: tailChildren,
       }
-    }
-    if (!isNode) return { node: null, last }
-    return {
-      node: {
+    } else if (isNode) {
+      node = {
         type: 'Tag', range: [start, end], name, shorthands, attributeBlocks, andAttributes,
         selfClose, dot, expansion: null, children: tailChildren,
-      },
-      last,
+      }
+    } else {
+      return { node: null, last, colon }
     }
+    return { node, last, colon }
   }
 
-  /** Line kinds for raw[index + 1 .. last], the continuation of a multi-line tag head. */
-  function pushHeadLines(tag: Tag | MixinCall | null, index: number, last: number, depth: number): void {
-    const spans: Range[] = tag
-      ? [...tag.attributeBlocks.flatMap((b) => b.attributes.map((a) => a.range)), ...tag.andAttributes.map((a) => a.range)]
-      : []
+  /**
+   * The filter line on raw[index] (`:name`, nested `:a:b`, attribute blocks,
+   * inline text), or null when it does not start with ':' and a name. Its
+   * text — inline, or the deeper lines as a raw block — is never interpolated.
+   */
+  function parseFilter(index: number): { node: Filter; last: number } | null {
+    const line = raw[index]!
+    const start = line.indent[1]
+    FILTER_HEAD.lastIndex = start
+    const match = FILTER_HEAD.exec(src)?.[0]
+    if (!match) return null
+    let pos = start + match.length
+    const attributeBlocks: AttributeBlock[] = []
+    while (src[pos] === '(') {
+      let result = parseAttributeBlock(src, pos, docEnd)
+      if (result.errors.some((e) => UNCLOSED.has(e.code))) result = parseAttributeBlock(src, pos, line.range[1])
+      attributeBlocks.push(result.block)
+      errors.push(...result.errors)
+      pos = result.next
+    }
+    let last = index
+    while (last + 1 < raw.length && raw[last + 1]!.range[0] <= pos) last++
+    const end = raw[last]!.range[1]
+    const children: Text[] = []
+    if (pos < end) {
+      if (src[pos] === ' ' || src[pos] === '\t') {
+        const [s, e] = trimmed(pos, end)
+        if (s < e) children.push(rawText('inline', [s, e]))
+      } else {
+        errors.push(unsupported(src, pos, end))
+      }
+    }
+    const node: Filter = { type: 'Filter', name: match.slice(1), range: [start, end], attributeBlocks, children }
+    return { node, last }
+  }
+
+  /** Line kinds for raw[index + 1 .. last], the continuation of a multi-line head (`nodes`: those on it). */
+  function pushHeadLines(nodes: readonly (Tag | MixinCall | Filter)[], index: number, last: number, depth: number): void {
+    const spans: Range[] = nodes.flatMap((n) => [
+      ...n.attributeBlocks.flatMap((b) => b.attributes.map((a) => a.range)),
+      ...('andAttributes' in n ? n.andAttributes.map((a) => a.range) : []),
+    ])
     for (let k = index + 1; k <= last; k++) {
       const l = raw[k]!
       const lineStart = l.range[0]
@@ -280,9 +415,11 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
     const depth = stack.length
     pushLine(line, 'node', depth)
     let node: PugNode | null
+    let chain: Chain = []    // a head's tag/mixin call chain; nested lines join its last node
     const start = line.indent[1]
     const first = src[start]
-    let control: Control | null = null
+    let control: ReturnType<typeof parseControl> = null
+    let filter: ReturnType<typeof parseFilter> = null
     if (text.slice(start, line.range[1]).startsWith('//')) {
       const comment = parseComment(i, indent, depth)
       node = comment.node
@@ -295,26 +432,36 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
       node = code.node
       i = code.next
     } else if (first === '=' || src.startsWith('!=', start)) {
-      node = codeNode(start, line.range[1])
+      node = codeNode(src, start, line.range[1])
       i++
-    } else if ((control = parseControl(start, line.range[1]))) {
-      node = control
-      i++
+    } else if (first === ':' && (filter = parseFilter(i))) {
+      const filterNode = filter.node
+      node = filterNode
+      pushHeadLines([filterNode], i, filter.last, depth)
+      i = rawBlock(filter.last + 1, indent, depth, (l) => {
+        filterNode.children.push(rawText('block', [l.indent[1], l.range[1]]))
+      })
+    } else if ((control = parseControl(i))) {
+      node = control.node
+      chain = control.chain
+      pushHeadLines(chain, i, control.last, depth)
+      i = control.last + 1
     } else {
-      const tag = parseTag(i)
-      const tagNode = tag.node
-      node = tagNode
-      pushHeadLines(tagNode, i, tag.last, depth)
+      const tag = parseChain(start, i)
+      chain = tag.chain
+      node = chain[0] ?? null
+      pushHeadLines(chain, i, tag.last, depth)
       i = tag.last + 1
-      if (tagNode?.type === 'Tag' && tagNode.dot) {
-        i = rawBlock(i, indent, depth, (l) => {
-          const content: Range = [l.indent[1], l.range[1]]
-          tagNode.children.push(textNode('block', content, content))
-        })
-      }
+    }
+    const leaf = chain[chain.length - 1]
+    if (leaf?.type === 'Tag' && leaf.dot) {
+      i = rawBlock(i, indent, depth, (l) => {
+        const content: Range = [l.indent[1], l.range[1]]
+        leaf.children.push(textNode('block', content, content))
+      })
     }
     if (node) siblings.push(node)
-    stack.push({ indent, node })
+    stack.push({ indent, node: leaf ?? node })
   }
 
   const firstEol = raw.find((l) => l.eol !== '')?.eol

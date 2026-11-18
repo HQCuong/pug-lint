@@ -1,7 +1,7 @@
 // CST -> vue-eslint-parser intermediate tokens (StartTag/EndTag/Text/Mustache) plus the
 // low-level tokens and comments that end up in `templateBody.tokens` / `.comments`.
 // Mapping table: plan Design §3. Imports nothing from ESLint or Vue (bundled into the CJS tokenizer).
-import type { Attribute, AttributeValue, Comment, Filter, PugNode, Range, Tag, Text } from '@pug-lint/parser'
+import type { Attribute, AttributeValue, Comment, Control, Filter, MixinCall, PugNode, Range, Tag, Text } from '@pug-lint/parser'
 import type { LineIndex, Position } from './line-index.ts'
 
 export interface SourceLocation {
@@ -153,6 +153,18 @@ export class Emitter {
     if (this.open.length > 0) yield { type: 'Text', value: token.value, ...this.loc(...range) }
   }
 
+  /**
+   * The range of a node's head: its range up to a first child that starts on the same line
+   * (a block expansion child, inline text), trailing whitespace trimmed, so tokens never overlap.
+   */
+  private headRange(node: Control | MixinCall): Range {
+    const [start, end] = node.range
+    const first = node.children[0]?.range[0] ?? end
+    let headEnd = first > start && first < end ? first : end
+    while (headEnd > start && /\s/u.test(this.ctx.text[headEnd - 1]!)) headEnd--
+    return [start, headEnd]
+  }
+
   /** What vue-eslint-parser's `closeCurrentElementIfNecessary` does before it opens `rawName`. */
   private closeEarly(rawName: string): void {
     const current = this.open.at(-1)
@@ -179,7 +191,7 @@ export class Emitter {
         this.comment(node)
         return
       case 'Control':
-        this.token('PugControl', node.range)
+        this.token('PugControl', this.headRange(node))
         yield* this.nodes(node.children, raw)
         return
       case 'Code':
@@ -187,7 +199,7 @@ export class Emitter {
         yield* this.nodes(node.children, raw)
         return
       case 'MixinCall':
-        this.token('PugMixinCall', node.range)
+        this.token('PugMixinCall', this.headRange(node))
         yield* this.nodes(node.children, raw)
         return
       case 'Filter':
