@@ -116,22 +116,15 @@ describe('parsePug: attribute blocks', () => {
     expect(attrs(doc).map((a) => a.value?.raw ?? null)).toEqual(values)
   })
 
+  // Pug compiles attribute values as JavaScript: a quoted string cannot contain a raw line break.
   const multiLine = 'a(\n  href="/x"\n  :class="{ active: isActive,\n    big: true }"\n) Link'
   const backtick = 'a(:class=`{\n  a: b\n}` y)'
 
   const checkMultiLine = (src: string): void => {
     const doc = parse(src)
-    expect(attrs(doc)).toHaveLength(2)
-    expect(attrs(doc).map((a) => a.key.raw)).toEqual(['href', ':class'])
-    const cls = attrs(doc)[1]!.value!
-    expect(cls.kind).toBe('string')
-    expect(slice(src, cls.inner!).replace(/\r\n/g, '\n')).toBe('{ active: isActive,\n    big: true }')
-    expect(doc.lines.map((l) => l.kind)).toEqual(['node', 'attribute', 'attribute', 'continuation', 'paren-close'])
-    expect(doc.lines[3]!.anchor).toBe(2)
-    expect(doc.lines.map((l) => l.depth)).toEqual([0, 1, 1, 1, 0])
-    const tag = asTag(doc.children[0])
-    expect(tag.attributeBlocks[0]!.range).toEqual([at(src, '(')[0], at(src, ')')[1]])
-    expect(tag.range).toEqual([0, src.length])
+    // The string error, then the head re-read within its first line (an error-recovery region).
+    expect(doc.errors.map((e) => e.code)).toContain('unterminated-string')
+    expect(doc.errors.find((e) => e.code === 'unterminated-string')!.offset).toBe(at(src, '"{')[0])
   }
 
   const checkBacktick = (src: string): void => {
@@ -145,9 +138,23 @@ describe('parsePug: attribute blocks', () => {
     expect(doc.lines.map((l) => l.anchor)).toEqual([null, 0, 0])
   }
 
-  it('parses a multi-line block and classifies its lines', () => checkMultiLine(multiLine))
+  it('reports a line break inside a quoted value as an unterminated string', () => checkMultiLine(multiLine))
   it('parses a multi-line template literal value', () => checkBacktick(backtick))
-  it('parses a multi-line block with CRLF line endings', () => checkMultiLine(toCRLF(multiLine)))
+  it('reports a line break inside a quoted value as an unterminated string (CRLF)', () => checkMultiLine(toCRLF(multiLine)))
+
+  it.each([['LF', '\n'], ['CRLF', '\r\n']])('accepts a backslash line continuation in a quoted value (%s)', (_, eol) => {
+    const src = `a(title="x\\${eol}  y" id="z")`
+    const doc = parse(src)
+    expect(doc.errors).toEqual([])
+    expect(attrs(doc).map((a) => a.value!.kind)).toEqual(['string', 'string'])
+  })
+
+  it.each([['"', "'"], ["'", '"']])('reports a line break in a %s string inside an expression value', (inner, outer) => {
+    const src = `a(:x=${outer}f(${inner}a\nb${inner})${outer})`
+    const errors = parse(src).errors
+    expect(errors.map((e) => e.code)).toContain('unterminated-string')
+    expect(errors.find((e) => e.code === 'unterminated-string')!.offset).toBe(at(src, `${outer}f(`)[0])
+  })
   it('parses a multi-line template literal with CRLF line endings', () => checkBacktick(toCRLF(backtick)))
 
   it('parses consecutive attribute blocks', () => {
@@ -235,9 +242,9 @@ describe('literalSpans', () => {
     expect(spans(src, src)).toEqual(['"x\\"y"', "'z'", '`t ${"u"} v`'])
   })
 
-  it('spans line breaks and runs to the range end when unclosed', () => {
-    const src = '"x\n  y" + `a\n  b'
-    expect(spans(src, src)).toEqual(['"x\n  y"', '`a\n  b'])
+  it('spans line breaks in template literals; a quoted string ends unclosed at a line break', () => {
+    const src = '`x\n  y` + "a\n  b'
+    expect(spans(src, src)).toEqual(['`x\n  y`', '"a\n  b'])
   })
 
   it('finds nothing in literal-free code', () => {

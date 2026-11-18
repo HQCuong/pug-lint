@@ -46,6 +46,28 @@ export const overrides: Record<string, Override> = {
     status: 'forced-keep',
     reason: 'its only dropped fix turns :class="\'x\'" into a static class, which the structural fingerprint counts as a new class; the guard keeps that report and drops only that fix',
   },
+  // Fixes and suggestions that change the template structure by design (an attribute or class added or
+  // removed, children removed): the guard drops them, as it should, and the reports are right on Pug.
+  'vue/prefer-separate-static-class': {
+    status: 'forced-keep',
+    reason: 'its fix turns :class="\'x\'" into a static class, which the structural fingerprint counts as a new class; the guard drops that fix and keeps the report',
+  },
+  'vue/no-template-target-blank': {
+    status: 'forced-keep',
+    reason: 'its suggestion adds a rel attribute, an attribute-count change the guard drops; the report stays',
+  },
+  'vue/prefer-v-model': {
+    status: 'forced-keep',
+    reason: 'its fix merges two attributes into v-model, an attribute-count change the guard drops; the report stays',
+  },
+  'vue/no-child-content': {
+    status: 'forced-keep',
+    reason: 'its suggestion removes the element\'s children, a structure change the guard drops; the report stays',
+  },
+  'vue/no-empty-component-block': {
+    status: 'forced-keep',
+    reason: 'reports an empty <template> block at its tag, outside the Pug template; removing the block changes the template count, so the guard drops that fix',
+  },
   'vue/html-quotes': {
     status: 'forced-suppress',
     reason: 'its fixer escapes inner quotes as &quot;, which is wrong inside a Pug attribute (a JS string that Pug then HTML-escapes), and it does not know that a backtick is a legitimate Pug quote',

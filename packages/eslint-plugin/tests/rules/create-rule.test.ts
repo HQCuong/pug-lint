@@ -150,7 +150,7 @@ runRule('test-error-region', reliableTags, {
     },
     {
       name: 'multi-line attribute blocks and values without errors are reliable',
-      pug: 'a(\n  x="1"\n  :y="{\n    a: 1\n  }"\n)\nb',
+      pug: 'a(\n  x="1"\n  :y=`{\n    a: 1\n  }`\n)\nb',
       errors: [{ messageId: 'tag', line: 2, endLine: 7 }, { messageId: 'tag', line: 8 }],
     },
   ],

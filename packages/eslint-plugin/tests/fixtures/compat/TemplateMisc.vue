@@ -20,6 +20,9 @@ div
   MyComp(v-if="a")
   MyComp(v-else)
   div(v-bind:foo) nobind
+  div(v-bind) nobindarg
+  div(0abc="x") badname
+  template(class="x" v-if="a") useless
   div(v-cloak="x") cloak
   div(v-else-if="x") orphan
   div(v-html) nohtml

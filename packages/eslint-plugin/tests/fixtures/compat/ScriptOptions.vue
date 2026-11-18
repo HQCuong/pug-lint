@@ -51,6 +51,7 @@ export default {
       this.$emit('fooBar', 1, 2)
       this.$nextTick(() => {})
       this.$nextTick
+      this.$scopedSlots.default(1, 2)
     },
     total() {},
   },

@@ -13,21 +13,21 @@ Generated against eslint-plugin-vue 10.12.1. Each rule runs alone on the Pug fix
   templates (still active on HTML templates and scripts). Keep one with `vuePug.configure({ keepVueRules })`.
 - **forced-keep**: always runs.
 
-ok: 178 · untested: 44 · crash: 4 · mismatch: 3 · fix-unsafe: 3 · fix-ugly: 6 · forced-suppress: 7 · forced-keep: 7
+ok: 179 · untested: 37 · crash: 4 · mismatch: 3 · fix-unsafe: 10 · fix-ugly: 0 · forced-suppress: 7 · forced-keep: 12
 
 | Rule | Status | Reason | Replacement |
 |---|---|---|---|
-| `vue/array-bracket-newline` | fix-ugly | AttrOrder.vue: fixed output has new layout reports (vue-pug/attribute-parens-newline:expectedAfterOpen ×1, vue-pug/attribute-parens-newline:expectedBeforeClose ×1) |  |
+| `vue/array-bracket-newline` | fix-unsafe | AttrOrder.vue: the guard dropped 2 fix(es) or suggestion(s) |  |
 | `vue/array-bracket-spacing` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/array-element-newline` | fix-ugly | AttrOrder.vue: fixed output has new layout reports (vue-pug/attribute-parens-newline:expectedAfterOpen ×1, vue-pug/attribute-parens-newline:expectedBeforeClose ×1) |  |
+| `vue/array-element-newline` | fix-unsafe | AttrOrder.vue: the guard dropped 1 fix(es) or suggestion(s) |  |
 | `vue/arrow-spacing` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/attribute-hyphenation` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/attributes-order` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/block-lang` | forced-keep | reports the lang attribute of the <template> block itself, outside the Pug template; the twin has no lang (measured: mismatch) |  |
+| `vue/block-lang` | forced-keep | reports the lang attribute of the <template> block itself, outside the Pug template; the twin has no lang (measured: mismatch: AttrOrder.vue: more on Pug (unexpected ×1)) |  |
 | `vue/block-order` | untested | no report on any fixture or option set |  |
 | `vue/block-spacing` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/block-tag-newline` | untested | no report on any fixture or option set |  |
-| `vue/brace-style` | fix-ugly | TemplateMisc.vue: fixed output has new layout reports (vue-pug/attribute-parens-newline:expectedAfterOpen ×1, vue-pug/attribute-parens-newline:expectedBeforeClose ×1) |  |
+| `vue/brace-style` | fix-unsafe | TemplateMisc.vue: the guard dropped 2 fix(es) or suggestion(s) |  |
 | `vue/camelcase` | untested | no report on any fixture or option set |  |
 | `vue/comma-dangle` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/comma-spacing` | ok | same reports as the HTML twin; fixes clean |  |
@@ -35,7 +35,7 @@ ok: 178 · untested: 44 · crash: 4 · mismatch: 3 · fix-unsafe: 3 · fix-ugly:
 | `vue/comment-directive` | forced-keep | implements eslint-disable directives written as Pug comments; its messages are directive bookkeeping (measured: untested) |  |
 | `vue/component-api-style` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/component-definition-name-casing` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/component-name-in-template-casing` | crash | AttrOrder.vue: Cannot read properties of null (reading 'range') |  |
+| `vue/component-name-in-template-casing` | crash | throws on AttrOrder.vue |  |
 | `vue/component-options-name-casing` | untested | no report on any fixture or option set |  |
 | `vue/custom-event-name-casing` | untested | no report on any fixture or option set |  |
 | `vue/define-emits-declaration` | untested | no report on any fixture or option set |  |
@@ -46,39 +46,39 @@ ok: 178 · untested: 44 · crash: 4 · mismatch: 3 · fix-unsafe: 3 · fix-ugly:
 | `vue/dot-notation` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/enforce-style-attribute` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/eqeqeq` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/first-attribute-linebreak` | forced-suppress | replaced by vue-pug/attribute-parens-newline inside Pug templates (measured: mismatch) | `vue-pug/attribute-parens-newline` |
+| `vue/first-attribute-linebreak` | forced-suppress | replaced by vue-pug/attribute-parens-newline inside Pug templates (measured: fix-unsafe: Layout.vue: the guard dropped 1 fix(es) or suggestion(s)) | `vue-pug/attribute-parens-newline` |
 | `vue/func-call-spacing` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/html-button-has-type` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/html-closing-bracket-newline` | crash | AttrOrder.vue: Cannot read properties of null (reading 'type') | `vue-pug/attribute-parens-newline` |
-| `vue/html-closing-bracket-spacing` | crash | AttrOrder.vue: Cannot read properties of null (reading 'type') | `vue-pug/attribute-parens-spacing` |
+| `vue/html-closing-bracket-newline` | crash | throws on AttrOrder.vue | `vue-pug/attribute-parens-newline` |
+| `vue/html-closing-bracket-spacing` | crash | throws on AttrOrder.vue | `vue-pug/attribute-parens-spacing` |
 | `vue/html-comment-content-newline` | mismatch | TemplateMisc.vue: fewer on Pug (expectedAfterHTMLCommentOpen ×1, expectedBeforeHTMLCommentOpen ×1) |  |
 | `vue/html-comment-content-spacing` | mismatch | Conditionals.vue: fewer on Pug (expectedAfterHTMLCommentOpen ×1, expectedBeforeHTMLCommentOpen ×1) |  |
 | `vue/html-comment-indent` | untested | no report on any fixture or option set |  |
 | `vue/html-end-tags` | forced-suppress | replaced by vue-pug/self-closing inside Pug templates (measured: untested) | `vue-pug/self-closing` |
-| `vue/html-indent` | crash | AttrOrder.vue: Cannot read properties of null (reading 'type') | `vue-pug/indent` |
-| `vue/html-quotes` | forced-suppress | its fixer escapes inner quotes as &quot;, which is wrong inside a Pug attribute (a JS string that Pug then HTML-escapes), and it does not know that a backtick is a legitimate Pug quote (measured: mismatch) | `vue-pug/attribute-quotes` |
-| `vue/html-self-closing` | forced-suppress | replaced by vue-pug/self-closing inside Pug templates (measured: mismatch) | `vue-pug/self-closing` |
+| `vue/html-indent` | crash | throws on AttrOrder.vue | `vue-pug/indent` |
+| `vue/html-quotes` | forced-suppress | its fixer escapes inner quotes as &quot;, which is wrong inside a Pug attribute (a JS string that Pug then HTML-escapes), and it does not know that a backtick is a legitimate Pug quote (measured: mismatch: AttrOrder.vue: more on Pug (expected ×2)) | `vue-pug/attribute-quotes` |
+| `vue/html-self-closing` | forced-suppress | replaced by vue-pug/self-closing inside Pug templates (measured: mismatch: AttrOrder.vue: more on Pug (disallowSelfClosing ×2)) | `vue-pug/self-closing` |
 | `vue/jsx-uses-vars` | untested | no report on any fixture or option set |  |
 | `vue/key-spacing` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/keyword-spacing` | untested | no report on any fixture or option set |  |
 | `vue/match-component-file-name` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/match-component-import-name` | untested | no report on any fixture or option set |  |
-| `vue/max-attributes-per-line` | forced-suppress | replaced by vue-pug/max-attributes-per-line inside Pug templates (measured: fix-ugly) | `vue-pug/max-attributes-per-line` |
-| `vue/max-len` | forced-keep | measures source lines, which in Pug are real lines; pug.render puts the whole twin template on one line (measured: mismatch) |  |
-| `vue/max-lines-per-block` | forced-keep | counts source lines of the block; pug.render puts the whole twin template on one line (measured: mismatch) |  |
+| `vue/max-attributes-per-line` | forced-suppress | replaced by vue-pug/max-attributes-per-line inside Pug templates (measured: fix-ugly: AttrOrder.vue: fixed output has new layout reports (vue-pug/attribute-parens-newline:expectedAfterOpen ×7, vue-pug/attribute-parens-newline:expectedBeforeClose ×7, vue-pug/indent:unexpected ×15)) | `vue-pug/max-attributes-per-line` |
+| `vue/max-len` | forced-keep | measures source lines, which in Pug are real lines; pug.render puts the whole twin template on one line (measured: mismatch: AttrOrder.vue: fewer on Pug (max ×1)) |  |
+| `vue/max-lines-per-block` | forced-keep | counts source lines of the block; pug.render puts the whole twin template on one line (measured: mismatch: AttrOrder.vue: more on Pug (tooManyLines ×1)) |  |
 | `vue/max-props` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/max-template-depth` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/multi-word-component-names` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/multiline-html-element-content-newline` | fix-unsafe | Components.vue: the guard dropped 24 fix(es) |  |
-| `vue/multiline-ternary` | fix-ugly | TemplateMisc.vue: fixed output has new layout reports (vue-pug/attribute-parens-newline:expectedAfterOpen ×1, vue-pug/attribute-parens-newline:expectedBeforeClose ×1) |  |
+| `vue/multiline-html-element-content-newline` | fix-unsafe | Components.vue: the guard dropped 2 fix(es) or suggestion(s) |  |
+| `vue/multiline-ternary` | fix-unsafe | Expressions.vue: the guard dropped 2 fix(es) or suggestion(s) |  |
 | `vue/mustache-interpolation-spacing` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/new-line-between-multi-line-property` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/next-tick-style` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-arrow-functions-in-watch` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-async-in-computed-properties` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/no-bare-strings-in-template` | forced-keep | each piped Pug text line is its own text node, while the twin joins them into one; every bare string is still reported once per line (measured: mismatch) |  |
+| `vue/no-bare-strings-in-template` | forced-keep | each piped Pug text line is its own text node, while the twin joins them into one; every bare string is still reported once per line (measured: mismatch: Layout.vue: more on Pug (unexpected ×1)) |  |
 | `vue/no-boolean-default` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/no-child-content` | ok | same reports as the HTML twin; fixes clean |  |
+| `vue/no-child-content` | forced-keep | its suggestion removes the element's children, a structure change the guard drops; the report stays (measured: fix-unsafe: TemplateMisc.vue: the guard dropped 2 fix(es) or suggestion(s)) |  |
 | `vue/no-computed-properties-in-data` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-console` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-constant-condition` | ok | same reports as the HTML twin; fixes clean |  |
@@ -92,7 +92,7 @@ ok: 178 · untested: 44 · crash: 4 · mismatch: 3 · fix-unsafe: 3 · fix-ugly:
 | `vue/no-deprecated-dollar-scopedslots-api` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-deprecated-events-api` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-deprecated-filter` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/no-deprecated-functional-template` | untested | no report on any fixture or option set |  |
+| `vue/no-deprecated-functional-template` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-deprecated-html-element-is` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-deprecated-inline-template` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-deprecated-model-definition` | ok | same reports as the HTML twin; fixes clean |  |
@@ -111,7 +111,7 @@ ok: 178 · untested: 44 · crash: 4 · mismatch: 3 · fix-unsafe: 3 · fix-ugly:
 | `vue/no-duplicate-attr-inheritance` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-duplicate-attributes` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-duplicate-class-names` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/no-empty-component-block` | ok | same reports as the HTML twin; fixes clean |  |
+| `vue/no-empty-component-block` | forced-keep | reports an empty <template> block at its tag, outside the Pug template; removing the block changes the template count, so the guard drops that fix (measured: fix-unsafe: EmptyRoot.vue: the guard dropped 1 fix(es) or suggestion(s)) |  |
 | `vue/no-empty-pattern` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-export-in-script-setup` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-expose-after-await` | untested | no report on any fixture or option set |  |
@@ -123,9 +123,9 @@ ok: 178 · untested: 44 · crash: 4 · mismatch: 3 · fix-unsafe: 3 · fix-ugly:
 | `vue/no-literals-in-template` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-lone-template` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-loss-of-precision` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/no-multi-spaces` | forced-suppress | replaced by vue-pug/no-multi-spaces inside Pug templates (measured: fix-unsafe) | `vue-pug/no-multi-spaces` |
+| `vue/no-multi-spaces` | forced-suppress | replaced by vue-pug/no-multi-spaces inside Pug templates (measured: fix-unsafe: AttrOrder.vue: the guard dropped 4 fix(es) or suggestion(s)) | `vue-pug/no-multi-spaces` |
 | `vue/no-multiple-objects-in-class` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/no-multiple-slot-args` | untested | no report on any fixture or option set |  |
+| `vue/no-multiple-slot-args` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-multiple-template-root` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-mutating-props` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-negated-condition` | ok | same reports as the HTML twin; fixes clean |  |
@@ -142,7 +142,7 @@ ok: 178 · untested: 44 · crash: 4 · mismatch: 3 · fix-unsafe: 3 · fix-ugly:
 | `vue/no-restricted-block` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-restricted-call-after-await` | untested | no report on any fixture or option set |  |
 | `vue/no-restricted-class` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/no-restricted-component-names` | untested | no report on any fixture or option set |  |
+| `vue/no-restricted-component-names` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-restricted-component-options` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-restricted-custom-event` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-restricted-html-elements` | ok | same reports as the HTML twin; fixes clean |  |
@@ -156,18 +156,18 @@ ok: 178 · untested: 44 · crash: 4 · mismatch: 3 · fix-unsafe: 3 · fix-ugly:
 | `vue/no-shadow-native-events` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-shared-component-data` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-side-effects-in-computed-properties` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/no-spaces-around-equal-signs-in-attribute` | forced-suppress | replaced by vue-pug/attribute-equals-spacing inside Pug templates (measured: mismatch) | `vue-pug/attribute-equals-spacing` |
+| `vue/no-spaces-around-equal-signs-in-attribute` | forced-suppress | replaced by vue-pug/attribute-equals-spacing inside Pug templates (measured: mismatch: AttrOrder.vue: more on Pug (unexpectedSpaces ×2)) | `vue-pug/attribute-equals-spacing` |
 | `vue/no-sparse-arrays` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-static-inline-styles` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-template-key` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-template-shadow` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/no-template-target-blank` | ok | same reports as the HTML twin; fixes clean |  |
+| `vue/no-template-target-blank` | forced-keep | its suggestion adds a rel attribute, an attribute-count change the guard drops; the report stays (measured: fix-unsafe: TemplateMisc.vue: the guard dropped 1 fix(es) or suggestion(s)) |  |
 | `vue/no-textarea-mustache` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-this-in-before-route-enter` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-undef-components` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-undef-directives` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-undef-properties` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/no-unsupported-features` | fix-unsafe | Slots.vue: the guard dropped 9 fix(es) |  |
+| `vue/no-unsupported-features` | fix-unsafe | Slots.vue: the guard dropped 3 fix(es) or suggestion(s) |  |
 | `vue/no-unused-components` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-unused-emit-declarations` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-unused-properties` | ok | same reports as the HTML twin; fixes clean |  |
@@ -178,16 +178,16 @@ ok: 178 · untested: 44 · crash: 4 · mismatch: 3 · fix-unsafe: 3 · fix-ugly:
 | `vue/no-use-v-if-with-v-for` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-useless-concat` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-useless-mustaches` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/no-useless-template-attributes` | untested | no report on any fixture or option set |  |
-| `vue/no-useless-v-bind` | forced-keep | its only dropped fix turns :class="'x'" into a static class, which the structural fingerprint counts as a new class; the guard keeps that report and drops only that fix (measured: fix-unsafe) |  |
+| `vue/no-useless-template-attributes` | ok | same reports as the HTML twin; fixes clean |  |
+| `vue/no-useless-v-bind` | forced-keep | its only dropped fix turns :class="'x'" into a static class, which the structural fingerprint counts as a new class; the guard keeps that report and drops only that fix (measured: fix-unsafe: VModel.vue: the guard dropped 1 fix(es) or suggestion(s)) |  |
 | `vue/no-v-for-template-key-on-child` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-v-html` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-v-text` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-v-text-v-html-on-component` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-watch-after-await` | untested | no report on any fixture or option set |  |
-| `vue/object-curly-newline` | fix-ugly | AttrOrder.vue: fixed output has new layout reports (vue-pug/attribute-parens-newline:expectedAfterOpen ×1, vue-pug/attribute-parens-newline:expectedBeforeClose ×1, vue-pug/max-attributes-per-line:shouldBeOnNewLine ×2) |  |
+| `vue/object-curly-newline` | fix-unsafe | AttrOrder.vue: the guard dropped 2 fix(es) or suggestion(s) |  |
 | `vue/object-curly-spacing` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/object-property-newline` | ok | same reports as the HTML twin; fixes clean |  |
+| `vue/object-property-newline` | fix-unsafe | TemplateMisc.vue: the guard dropped 1 fix(es) or suggestion(s) |  |
 | `vue/object-shorthand` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/one-component-per-file` | untested | no report on any fixture or option set |  |
 | `vue/operator-linebreak` | untested | no report on any fixture or option set |  |
@@ -198,12 +198,12 @@ ok: 178 · untested: 44 · crash: 4 · mismatch: 3 · fix-unsafe: 3 · fix-ugly:
 | `vue/prefer-define-options` | untested | no report on any fixture or option set |  |
 | `vue/prefer-import-from-vue` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/prefer-prop-type-boolean-first` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/prefer-separate-static-class` | ok | same reports as the HTML twin; fixes clean |  |
+| `vue/prefer-separate-static-class` | forced-keep | its fix turns :class="'x'" into a static class, which the structural fingerprint counts as a new class; the guard drops that fix and keeps the report (measured: fix-unsafe: VModel.vue: the guard dropped 1 fix(es) or suggestion(s)) |  |
 | `vue/prefer-single-event-payload` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/prefer-template` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/prefer-true-attribute-shorthand` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/prefer-use-template-ref` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/prefer-v-model` | ok | same reports as the HTML twin; fixes clean |  |
+| `vue/prefer-v-model` | forced-keep | its fix merges two attributes into v-model, an attribute-count change the guard drops; the report stays (measured: fix-unsafe: TemplateMisc.vue: the guard dropped 1 fix(es) or suggestion(s)) |  |
 | `vue/prop-name-casing` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/quote-props` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/require-component-is` | ok | same reports as the HTML twin; fixes clean |  |
@@ -230,7 +230,7 @@ ok: 178 · untested: 44 · crash: 4 · mismatch: 3 · fix-unsafe: 3 · fix-ugly:
 | `vue/return-in-computed-property` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/return-in-emits-validator` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/script-indent` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/singleline-html-element-content-newline` | fix-unsafe | AttrOrder.vue: the guard dropped 24 fix(es) |  |
+| `vue/singleline-html-element-content-newline` | fix-unsafe | AttrOrder.vue: the guard dropped 2 fix(es) or suggestion(s) |  |
 | `vue/slot-name-casing` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/sort-keys` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/space-in-parens` | ok | same reports as the HTML twin; fixes clean |  |
@@ -242,18 +242,18 @@ ok: 178 · untested: 44 · crash: 4 · mismatch: 3 · fix-unsafe: 3 · fix-ugly:
 | `vue/use-v-on-exact` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/v-bind-style` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/v-for-delimiter-style` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/v-if-else-key` | fix-ugly | TemplateMisc.vue: fixed output has new layout reports (vue-pug/attribute-parens-spacing:unexpectedAfterOpen ×2) |  |
+| `vue/v-if-else-key` | fix-unsafe | TemplateMisc.vue: the fixed template does not compile with pug |  |
 | `vue/v-on-event-hyphenation` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/v-on-handler-style` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/v-on-style` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/v-slot-style` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/valid-attribute-name` | untested | no report on any fixture or option set |  |
+| `vue/valid-attribute-name` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/valid-define-emits` | untested | no report on any fixture or option set |  |
 | `vue/valid-define-options` | untested | no report on any fixture or option set |  |
 | `vue/valid-define-props` | untested | no report on any fixture or option set |  |
 | `vue/valid-next-tick` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/valid-template-root` | untested | no report on any fixture or option set |  |
-| `vue/valid-v-bind` | untested | no report on any fixture or option set |  |
+| `vue/valid-template-root` | ok | same reports as the HTML twin; fixes clean |  |
+| `vue/valid-v-bind` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/valid-v-cloak` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/valid-v-else` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/valid-v-else-if` | ok | same reports as the HTML twin; fixes clean |  |

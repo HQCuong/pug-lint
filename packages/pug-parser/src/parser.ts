@@ -323,6 +323,8 @@ export function parsePug(text: string, options: ParseOptions = {}): PugDocument 
     if (head.unclosed) {
       // Pug reads on to where the first read stopped: an error-recovery region.
       regions.push([index, lineAt(head.pos, index)])
+      // A string the first read found unterminated on a later line is the cause: keep that error.
+      errors.push(...head.errs.filter((e) => e.code === 'unterminated-string' && e.offset >= line.range[1]))
       head = read(line.range[1])
     }
     errors.push(...head.errs)

@@ -14,7 +14,7 @@ export const optionSets: Record<string, unknown[][]> = {
   'vue/max-template-depth': [[{ maxDepth: 1 }]],
   'vue/no-restricted-block': [['style']],
   'vue/no-restricted-class': [['forbidden']],
-  'vue/no-restricted-component-names': [['MyComp']],
+  'vue/no-restricted-component-names': [['AttrOrder']],
   'vue/no-restricted-component-options': [['watch']],
   'vue/no-restricted-custom-event': [['fooBar']],
   'vue/no-restricted-html-elements': [['button']],

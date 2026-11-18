@@ -13,6 +13,8 @@ const convert = ['double', { backticks: 'convert' }]
 
 runRule('attribute-quotes', rule, {
   valid: [
+    // Invalid Pug (a quoted JS string cannot contain a line break): a parse error, left alone.
+    { name: 'a quoted value spanning lines', pug: "a(:c='{ a: 1,\n  b: 2 }')" },
     'a(x="1")',
     'a(x y="")',
     { name: 'backticks are kept by default', pug: 'a(x=`t`)' },
@@ -45,7 +47,6 @@ runRule('attribute-quotes', rule, {
     },
     { name: 'a bound key keeps its expression', options: convert, pug: 'a(:x=`{ a: b }`)', output: 'a(:x="{ a: b }")', errors: [err(2, 6, 16)] },
     { name: 'a Vue directive value', pug: "a(:href='url' @click='go()')", output: 'a(:href="url" @click="go()")', errors: [err(2, 9, 14), err(2, 22, 28)] },
-    { name: 'a value spanning lines', pug: "a(:c='{ a: 1,\n  b: 2 }')", output: 'a(:c="{ a: 1,\n  b: 2 }")', errors: [{ messageId: 'wrongQuotes', line: 2, column: 6, endLine: 3, endColumn: 10 }] },
     { name: 'an empty string', pug: "a(x='')", output: 'a(x="")', errors: [err(2, 5, 7)] },
     { name: 'tag interpolation', pug: "p #[a(x='1') t]", output: 'p #[a(x="1") t]', errors: [err(2, 9, 12)] },
     { name: 'mixin call attributes', pug: "+m(1)(x='1')", output: '+m(1)(x="1")', errors: [err(2, 9, 12)] },

@@ -13,15 +13,22 @@ const unterminated = (errors: PugParseError[] | undefined, offset: number, what:
 
 /**
  * End (index after the closing quote) of the '…' or "…" literal at `i`, or -1 if
- * it is not closed before `end`. Backslash escapes are skipped; EOLs are allowed
- * (Pug attribute values may span lines).
+ * it is not closed before `end` or before a raw line break. As in JavaScript (and so
+ * in Pug, which compiles attribute values as JS), a quoted string cannot span lines;
+ * only a backslash line continuation can. Backslash escapes are skipped.
  */
 export function skipString(text: string, i: number, end: number): number {
   const quote = text[i]
   for (let j = i + 1; j < end; j++) {
     const c = text[j]
-    if (c === '\\') j++
-    else if (c === quote) return j + 1
+    if (c === '\\') {
+      j++
+      if (text[j] === '\r' && text[j + 1] === '\n') j++
+    } else if (c === quote) {
+      return j + 1
+    } else if (c === '\n' || c === '\r') {
+      return -1
+    }
   }
   return -1
 }

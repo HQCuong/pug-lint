@@ -74,14 +74,18 @@ function withoutShorthands(text: string, range: Range): string {
   return out
 }
 
-/** `text` with its (single) Pug template replaced by `pug.render` HTML. */
+/**
+ * `text` with its (single) Pug template replaced by `pug.render` HTML. The `<template>` tag keeps
+ * its other attributes (`functional`); only `lang` is removed. Throws when Pug cannot compile it.
+ */
 export function htmlTwin(text: string): string {
   const [range] = findPugTemplateRanges(text)
   if (!range) throw new Error('htmlTwin(): no Pug template')
   const open = text.lastIndexOf('<template', range[0])
   const close = text.indexOf('</template>', range[1]) + '</template>'.length
+  const openTag = text.slice(open, range[0]).replace(/\s+lang\s*=\s*(["'])(pug|jade)\1/, '')
   const html = pug.render(dedent(withoutShorthands(text, range)), { doctype: 'html' })
-  return `${text.slice(0, open)}<template>\n${html}\n</template>${text.slice(close)}`
+  return `${text.slice(0, open)}${openTag}\n${html}\n</template>${text.slice(close)}`
 }
 
 export function compatFixtures(): CompatFixture[] {
@@ -103,22 +107,26 @@ function templateBody(code: string, pugSide: boolean): AST.VElement {
   return body
 }
 
-/** `name.class1.class2` per element, pre-order; classes = the merged set of every static `class` attribute. */
-function elementSkeleton(body: AST.VElement): string[] {
+/**
+ * `name.class1.class2(key1 key2)` per element, pre-order: classes = the merged set of every static
+ * `class` attribute; keys = the attribute keys in source order (Pug moves `class` first).
+ */
+function elementSkeleton(body: AST.VElement, text: string): string[] {
   const out: string[] = []
   const visit = (el: AST.VElement): void => {
     const classes = new Set<string>()
     for (const a of el.startTag.attributes) {
       if (!a.directive && a.key.name === 'class' && a.value) for (const c of a.value.value.split(/\s+/)) if (c) classes.add(c)
     }
-    out.push([el.rawName.toLowerCase(), ...[...classes].sort()].join('.'))
+    const keys = el.startTag.attributes.map((a) => text.slice(a.key.range[0], a.key.range[1]))
+    out.push(`${[el.rawName.toLowerCase(), ...[...classes].sort()].join('.')}(${keys.join(' ')})`)
     for (const child of el.children) if (child.type === 'VElement') visit(child)
   }
   for (const child of body.children) if (child.type === 'VElement') visit(child)
   return out
 }
 
-/** Why `f`'s twin is not a faithful HTML rendering of its Pug template (empty = faithful). */
+/** Why `f`'s twin is not a faithful HTML rendering of its Pug template (empty = faithful): elements, class sets, attribute order, parse errors. */
 export function twinProblems(f: CompatFixture): string[] {
   const pugBody = templateBody(f.text, true)
   const htmlBody = templateBody(f.twin, false)
@@ -128,8 +136,8 @@ export function twinProblems(f: CompatFixture): string[] {
   const pugErrors = errors(pugBody).map((e) => e.message).join(', ')
   const htmlErrors = errors(htmlBody).map((e) => e.message).join(', ')
   if (pugErrors !== htmlErrors) problems.push(`parse errors differ:\n  pug:  ${pugErrors}\n  twin: ${htmlErrors}`)
-  const a = elementSkeleton(pugBody)
-  const b = elementSkeleton(htmlBody)
+  const a = elementSkeleton(pugBody, f.text)
+  const b = elementSkeleton(htmlBody, f.twin)
   if (a.join(' ') !== b.join(' ')) problems.push(`elements differ:\n  pug:  ${a.join(' ')}\n  twin: ${b.join(' ')}`)
   return problems
 }
@@ -172,7 +180,6 @@ function htmlConfig(vue: ESLint.Plugin, rules: Linter.RulesRecord): Linter.Confi
 }
 
 const FILENAME = 'Compat.vue'
-const firstLine = (error: unknown): string => (error instanceof Error ? error.message : String(error)).split('\n')[0]!
 
 function counts(messages: Linter.LintMessage[], key: (m: Linter.LintMessage) => string): Map<string, number> {
   const out = new Map<string, number>()
@@ -197,17 +204,16 @@ function classifyRun(rule: string, options: unknown[], f: CompatFixture, vue: ES
   const mine = (ms: Linter.LintMessage[]): Linter.LintMessage[] => ms.filter((m) => m.ruleId === rule)
   const idKey = (m: Linter.LintMessage): string => m.messageId ?? m.message
   const linter = new Linter({ configType: 'flat' })
-  let drops = 0
-  const onDrop = (): void => {
-    drops++
-  }
+  // Fixes and suggestions the guard drops: when linting (1) and when fixing (3).
+  let lintDrops = 0
+  let fixDrops = 0
 
   // (1)
   let pugMessages: Linter.LintMessage[]
   try {
-    pugMessages = mine(linter.verify(f.text, pugConfig(vue, rules, onDrop), FILENAME))
-  } catch (error) {
-    return { status: 'crash', reason: `${f.name}: ${firstLine(error)}`, reports: 1 }
+    pugMessages = mine(linter.verify(f.text, pugConfig(vue, rules, () => lintDrops++), FILENAME))
+  } catch {
+    return { status: 'crash', reason: `throws on ${f.name}`, reports: 1 }
   }
   // (2) A throw here (bad option set, rule broken on HTML) is a harness error and propagates.
   const html = mine(linter.verify(f.twin, htmlConfig(vue, rules), FILENAME))
@@ -222,12 +228,20 @@ function classifyRun(rule: string, options: unknown[], f: CompatFixture, vue: ES
   if (more.length > 0) raise('mismatch', `more on Pug (${more.join(', ')})`)
   else if (fewer.length > 0) raise('mismatch', `fewer on Pug (${fewer.join(', ')})`)
 
+  // A dropped suggestion counts too: editors apply suggestions.
+  if (lintDrops > 0) raise('fix-unsafe', `the guard dropped ${lintDrops} fix(es) or suggestion(s)`)
   if (pugMessages.some((m) => m.fix)) {
     // (3)
-    const fixed = linter.verifyAndFix(f.text, pugConfig(vue, rules, onDrop), { filename: FILENAME })
-    if (drops > 0) raise('fix-unsafe', `the guard dropped ${drops} fix(es)`)
-    // (4)
+    const fixed = linter.verifyAndFix(f.text, pugConfig(vue, rules, () => fixDrops++), { filename: FILENAME })
+    if (fixDrops > 0) raise('fix-unsafe', `the guard dropped ${fixDrops} fix(es) while fixing`)
     if (fixed.output !== f.text) {
+      // The guard checks our parser; the fixed template must also compile with the real Pug.
+      try {
+        htmlTwin(fixed.output)
+      } catch {
+        raise('fix-unsafe', 'the fixed template does not compile with pug')
+      }
+      // (4)
       const quiet = (): void => {}
       if (!layoutBefore.has(f.text)) {
         layoutBefore.set(f.text, counts(linter.verify(f.text, pugConfig(vue, layoutRules, quiet), FILENAME), layoutKey))
@@ -281,7 +295,8 @@ export function applyOverride(measured: RuleVerdict, override: Override | undefi
     return { ...measured, ...replacement }
   }
   if (!override.reason) throw new Error(`${measured.rule}: an override needs a reason`)
-  return { rule: measured.rule, status: override.status, reason: `${override.reason} (measured: ${measured.status})`, ...replacement }
+  const measuredText = measured.status === 'untested' ? measured.status : `${measured.status}: ${measured.reason}`
+  return { rule: measured.rule, status: override.status, reason: `${override.reason} (measured: ${measuredText})`, ...replacement }
 }
 
 // ---------------------------------------------------------------------------------------------------

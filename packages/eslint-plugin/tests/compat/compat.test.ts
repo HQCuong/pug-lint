@@ -4,8 +4,9 @@ import { readFileSync } from 'node:fs'
 import type { Rule } from 'eslint'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { vueCrashing, vueSuppressed } from '../../src/configs/generated/vue-compat.ts'
-import { classifyRule, compatFixtures, generate, twinProblems } from '../../tools/compat/run.ts'
-import type { Generated } from '../../tools/compat/run.ts'
+import { classifyRule, compatFixtures, generate, htmlTwin, twinProblems } from '../../tools/compat/run.ts'
+import type { CompatFixture, Generated } from '../../tools/compat/run.ts'
+import { vue } from '../helpers/vue.ts'
 
 // Rules the spike found must not run inside Pug templates (spec brief). `mustache-interpolation-spacing`
 // is left to the harness.
@@ -51,7 +52,42 @@ describe('classifyRule', () => {
     }
     const verdict = classifyRule('vue/test-throws', [[]], { rules: { 'test-throws': throws } })
     expect(verdict).toMatchObject({ rule: 'vue/test-throws', status: 'crash' })
-    expect(verdict.reason).toContain('boom')
+    expect(verdict.reason).toBe('throws on AttrOrder.vue')
+  })
+
+  // One fixture: `a(title="t") x`, and a fake rule reporting `"t"` once on each side.
+  const fixture = (): CompatFixture => {
+    const text = vue('div\n  a(title="t") x', '<script>\nexport default {}\n</script>\n')
+    return { name: 'T.vue', text, twin: htmlTwin(text) }
+  }
+  const reportsT = (fixOrSuggest: (range: [number, number]) => Partial<Rule.ReportDescriptor>): Rule.RuleModule => ({
+    meta: { type: 'problem', schema: [], fixable: 'code', hasSuggestions: true },
+    create: (context) => ({
+      Program() {
+        const i = context.sourceCode.text.indexOf('"t"')
+        if (i < 0) return
+        const range: [number, number] = [i, i + 3]
+        const loc = { start: context.sourceCode.getLocFromIndex(i), end: context.sourceCode.getLocFromIndex(i + 3) }
+        context.report({ loc, message: 'm', ...fixOrSuggest(range) } as Rule.ReportDescriptor)
+      },
+    }),
+  })
+
+  it('a fix that our parser accepts but pug cannot compile is fix-unsafe', () => {
+    // `title=1 +` is an expression value to our parser (same structure), a JS syntax error to pug.
+    const rule = reportsT((range) => ({ fix: (fixer: Rule.RuleFixer) => fixer.replaceTextRange(range, '1 +') }))
+    const verdict = classifyRule('vue/test-pug-compile', [[]], { rules: { 'test-pug-compile': rule }, fixtures: [fixture()] })
+    expect(verdict).toMatchObject({ status: 'fix-unsafe', reason: 'T.vue: the fixed template does not compile with pug' })
+  })
+
+  it('a dropped suggestion (no fix) is fix-unsafe', () => {
+    // `a(title=` → `a.x(title=`: a new class changes the template structure, so the guard drops it.
+    const afterTagName = (range: [number, number]): [number, number] => [range[0] - 'a(title='.length + 1, range[0] - 'a(title='.length + 1]
+    const rule = reportsT((range) => ({
+      suggest: [{ desc: 's', fix: (fixer: Rule.RuleFixer) => fixer.insertTextAfterRange(afterTagName(range), '.x') }],
+    }))
+    const verdict = classifyRule('vue/test-suggest', [[]], { rules: { 'test-suggest': rule }, fixtures: [fixture()] })
+    expect(verdict).toMatchObject({ status: 'fix-unsafe', reason: 'T.vue: the guard dropped 1 fix(es) or suggestion(s)' })
   })
 
   it('vue/no-spaces-around-equal-signs-in-attribute is suppressed, in favour of vue-pug/attribute-equals-spacing', () => {

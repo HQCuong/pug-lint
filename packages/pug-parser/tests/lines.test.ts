@@ -37,7 +37,7 @@ const table: [string, string, Row[]][] = [
     ['attribute', 2, null],
     ['node', 1, null],
   ]],
-  ['multi-line object value', 'div(\n  :class="{\n    a: b,\n    c: d\n  }"\n  id="x"\n)', [
+  ['multi-line object value', 'div(\n  :class=`{\n    a: b,\n    c: d\n  }`\n  id="x"\n)', [
     ['node', 0, null],
     ['attribute', 1, null],
     ['continuation', 1, 1],

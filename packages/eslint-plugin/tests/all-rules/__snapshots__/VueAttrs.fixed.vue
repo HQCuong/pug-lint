@@ -11,10 +11,10 @@ div
   button(:disabled="!ok" @click.prevent="go()") Go
   div(:class="{ a: true, b: false }" :style=`{ width: w + 'px' }`)
   div(
-    :obj="{
+    :obj=`{
       a: 1,
       b: 2
-    }"
+    }`
     v-html="raw"
   )
 </template>

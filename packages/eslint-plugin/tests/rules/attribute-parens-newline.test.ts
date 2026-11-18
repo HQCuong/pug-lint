@@ -16,8 +16,8 @@ runRule('attribute-parens-newline', rule, {
   valid: [
     'a(x y) t',
     'a(\n  x\n  y\n) t',
-    { name: 'a single attribute whose value spans lines', pug: 'a(:c="{\n  a: 1 }")' },
-    { name: 'two attributes starting on one line, the last spanning lines', pug: 'a(x :c="{\n  a: 1 }")' },
+    { name: 'a single attribute whose value spans lines', pug: 'a(:c=`{\n  a: 1 }`)' },
+    { name: 'two attributes starting on one line, the last spanning lines', pug: 'a(x :c=`{\n  a: 1 }`)' },
     'a',
     'a()',
     { name: 'an empty block is left alone', pug: 'a(\n)' },
@@ -42,8 +42,8 @@ runRule('attribute-parens-newline', rule, {
     },
     {
       name: 'a single attribute spanning lines',
-      pug: 'a(\n  :c="{\n    a: 1 }"\n)',
-      output: 'a(:c="{\n    a: 1 }")',
+      pug: 'a(\n  :c=`{\n    a: 1 }`\n)',
+      output: 'a(:c=`{\n    a: 1 }`)',
       errors: [unexpectedOpen(2, 3, 3, 3), unexpectedClose(4, 12, 5, 1)],
     },
     { name: 'only the side without a line break', pug: 'a(\n  x\n  y)', output: 'a(\n  x\n  y\n)', errors: [expectedClose(4, 4)] },
@@ -69,9 +69,9 @@ runRule('attribute-parens-newline', rule, {
     { name: 'the first of two blocks', pug: 'a(x\n  y)(z)', output: 'a(\n  x\n  y\n)(z)', errors: [expectedOpen(2, 2), expectedClose(3, 4)] },
     {
       name: 'never, with a value spanning lines',
-      pug: 'a(\n  x\n  :c="{\n    a: 1 }"\n)',
+      pug: 'a(\n  x\n  :c=`{\n    a: 1 }`\n)',
       options: never,
-      output: 'a(x\n  :c="{\n    a: 1 }")',
+      output: 'a(x\n  :c=`{\n    a: 1 }`)',
       errors: [unexpectedOpen(2, 3, 3, 3), unexpectedClose(5, 12, 6, 1)],
     },
     {

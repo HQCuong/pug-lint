@@ -145,6 +145,14 @@ describe('guardMessages', () => {
     expect(guardMessages(text, messages)).toBe(messages)
   })
 
+  it.each([['LF', '\n'], ['CRLF', '\r\n']])('drops a fix that puts a line break inside a quoted value (%s): Pug cannot compile it', (_label, eol) => {
+    // vue/object-property-newline does this to `:i="{ a: 1, b: 2 }"`.
+    const text = body('a(:i="{ a: 1, b: 2 }")')
+    const { result, reasons } = guard(text, [fixMsg(text, ', b', `,${eol}b`)])
+    expect(result[0]!.fix).toBeUndefined()
+    expect(reasons).toEqual(['parse-error'])
+  })
+
   it('never fails open on a cache miss', () => {
     const text = body('a(x="1")')
     const message = fixMsg(text, ')', '')

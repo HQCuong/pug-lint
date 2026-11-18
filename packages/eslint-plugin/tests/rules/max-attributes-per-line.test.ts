@@ -14,7 +14,7 @@ runRule('max-attributes-per-line', rule, {
     'a()',
     'a(\n  w\n  x\n  y\n  z\n)',
     { name: 'one attribute per line without parens on their own lines', pug: 'a(w\n  x\n  y\n  z)' },
-    { name: 'a single attribute whose value spans lines', pug: 'a(:c="{\n  a: 1 }")' },
+    { name: 'a single attribute whose value spans lines', pug: 'a(:c=`{\n  a: 1 }`)' },
     { pug: 'a(x) t', options: one },
     { pug: 'a(\n  w x\n  y\n)', options: [{ singleline: 3, multiline: 2 }] },
     { name: 'each attribute block counts on its own', pug: 'a(x y z)(w)' },
@@ -67,14 +67,14 @@ runRule('max-attributes-per-line', rule, {
     },
     {
       name: 'an attribute after a value spanning lines shares that line',
-      pug: 'a(\n  :c="{\n    a: 1 }" y\n)',
-      output: 'a(\n  :c="{\n    a: 1 }"\n  y\n)',
+      pug: 'a(\n  :c=`{\n    a: 1 }` y\n)',
+      output: 'a(\n  :c=`{\n    a: 1 }`\n  y\n)',
       errors: [err('y', 4, 13)],
     },
     {
       name: 'a value spanning lines makes the block multiline',
-      pug: 'a(x :c="{\n  a: 1 }")',
-      output: 'a(x\n  :c="{\n  a: 1 }")',
+      pug: 'a(x :c=`{\n  a: 1 }`)',
+      output: 'a(x\n  :c=`{\n  a: 1 }`)',
       errors: [{ messageId: 'shouldBeOnNewLine', data: { name: ':c' }, line: 2, column: 5, endLine: 3, endColumn: 10 }],
     },
     {
