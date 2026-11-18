@@ -1,4 +1,4 @@
-import type { Attribute, AttributeBlock, AttributeValue, PugParseError, Range, Tag } from './ast.ts'
+import type { Attribute, AttributeBlock, AttributeValue, MixinCall, PugParseError, Range, Tag } from './ast.ts'
 import { isWhitespace, skipExpression, skipString, skipTemplate } from './expression.ts'
 
 // Binary operators that join an unquoted value across whitespace ("b + c").
@@ -138,6 +138,9 @@ const TAG_NAME = /[A-Za-z](?:[\w:-]*\w)?/y
 // As in pug-lexer: a class name contains at least one letter or '_'.
 const CLASS_NAME = /[_a-zA-Z0-9-]*[_a-zA-Z][_a-zA-Z0-9-]*/y
 const ID_NAME = /[\w-]+/y
+const MIXIN_NAME = /[-\w]+/y
+// As in pug-lexer: a first paren group that starts like `key=` holds attributes, not arguments.
+const LOOKS_LIKE_ATTRIBUTES = /^\s*[-\w]+ *=/
 const AND_ATTRIBUTES = '&attributes('
 const UNCLOSED = new Set(['unclosed-attributes', 'unterminated-string'])
 
@@ -161,13 +164,15 @@ export interface TagHead {
 /**
  * The tag head starting at `start` (name, `.class`/`#id`, attribute blocks,
  * `&attributes(…)`, trailing `/`), reading no further than `limit`. Used for
- * tag lines and for the tag of a `#[…]` interpolation.
+ * tag lines and for the tag of a `#[…]` interpolation. `named`: the caller has
+ * already read a name (a mixin call's), so no tag name is read and attributes
+ * may come first.
  */
-export function parseTagHead(src: string, start: number, limit: number): TagHead {
+export function parseTagHead(src: string, start: number, limit: number, named = false): TagHead {
   const errs: PugParseError[] = []
   let pos = start
   let name: Tag['name'] = null
-  const tagName = matchAt(TAG_NAME, src, pos)
+  const tagName = named ? null : matchAt(TAG_NAME, src, pos)
   if (tagName) {
     name = { value: tagName, range: [start, start + tagName.length] }
     pos += tagName.length
@@ -184,7 +189,7 @@ export function parseTagHead(src: string, start: number, limit: number): TagHead
       if (!value) break
       shorthands.push({ kind: sigil === '.' ? 'class' : 'id', value, range: [pos, pos + 1 + value.length] })
       pos += 1 + value.length
-    } else if (!name && shorthands.length === 0) {
+    } else if (!named && !name && shorthands.length === 0) {
       break   // attributes need a tag name or shorthand before them
     } else if (sigil === '(') {
       const result = parseAttributeBlock(src, pos, limit)
@@ -212,9 +217,52 @@ export function parseTagHead(src: string, start: number, limit: number): TagHead
       break
     }
   }
-  if ((name || shorthands.length > 0) && src[pos] === '/' && pos < limit) {
+  // A mixin call has no self-closing form: its '/' is left for the caller to report.
+  if (!named && (name || shorthands.length > 0) && src[pos] === '/' && pos < limit) {
     selfClose = [pos, pos + 1]
     pos++
   }
   return { name, shorthands, attributeBlocks, andAttributes, selfClose, errs, unclosed, pos }
+}
+
+export interface MixinHead extends TagHead {
+  mixinName: MixinCall['name']
+  args: Range | null   // includes the parens
+}
+
+/**
+ * The mixin call head starting at the '+' at `start`: `+name`, an optional
+ * `(args)` group, then shorthands, attribute blocks and `&attributes(…)` as in
+ * a tag head. Null when no name follows the '+'.
+ */
+export function parseMixinHead(src: string, start: number, limit: number): MixinHead | null {
+  const value = matchAt(MIXIN_NAME, src, start + 1)
+  if (!value) return null
+  const mixinName = { value, range: [start + 1, start + 1 + value.length] as Range }
+  let pos = mixinName.range[1]
+  let args: Range | null = null
+  const errs: PugParseError[] = []
+  let unclosed = false
+  if (src[pos] === '(') {
+    const close = skipExpression(src, pos + 1, limit, { comma: false, whitespace: false }, errs)
+    if (close >= limit || src[close] !== ')') {
+      unclosed = true
+      if (errs.length === 0) {
+        errs.push({ code: 'unclosed-arguments', message: 'Mixin arguments are not closed with ")"', offset: pos })
+      }
+      args = [pos, close]
+      pos = close
+    } else if (!LOOKS_LIKE_ATTRIBUTES.test(src.slice(pos + 1, close))) {
+      args = [pos, close + 1]
+      pos = close + 1
+    }
+  }
+  const head = unclosed ? null : parseTagHead(src, pos, limit, true)
+  return {
+    name: null, shorthands: [], attributeBlocks: [], andAttributes: [], selfClose: null, pos,
+    ...head,
+    errs: [...errs, ...(head?.errs ?? [])],
+    unclosed: unclosed || (head?.unclosed ?? false),
+    mixinName, args,
+  }
 }

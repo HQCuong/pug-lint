@@ -1,8 +1,9 @@
 // Structural fingerprint (plan Design §3 "Fingerprint definition"): what a fix
-// may never change. Static class/id count once whatever their form, so
-// `class="a b"` ↔ `.a.b` and `id="x"` ↔ `#x` keep it; attribute names, values,
-// order, quotes, tag-name casing, text content, `/`, `:` and whitespace do not
-// appear in it.
+// may never change. Static class/id count whatever their form, so
+// `class="a b"` ↔ `.a.b` and `id="x"` ↔ `#x` keep it; every id source counts,
+// so dropping one of `#a(id="b")` changes it. Attribute names, values, order,
+// quotes, tag-name casing, text content, code and control heads, mixin
+// arguments, `/`, `:` and whitespace do not appear in it.
 
 import type { MixinCall, PugDocument, PugNode, Tag, Text } from './ast.ts'
 
@@ -64,33 +65,32 @@ function textFp(text: string, group: readonly Text[]): string {
   return tags.length > 0 ? `t${marks}[${tags.join(',')}]` : `t${marks}`
 }
 
-/** `.<classes>#<id>(<n>,<s>)` */
+/** `.<classes>#<ids>(<n>,<s>)`: every id (shorthand or static attribute) counts, sorted and joined with `#`. */
 function headFp(text: string, node: Tag | MixinCall): string {
   const classes = new Set<string>()
-  let id: string | null = null
+  const ids: string[] = []
   let n = node.andAttributes.length
   let s = 0
   for (const sh of node.shorthands) {
     if (sh.kind === 'class') classes.add(sh.value)
-    else id ??= sh.value
+    else ids.push(sh.value)
   }
-  const staticIds: string[] = []
   for (const block of node.attributeBlocks) {
     for (const attr of block.attributes) {
       const value = attr.value
       if (value?.hasSubstitution) s++
+      // Only a plain '…'/"…" string is static; a template literal (with `${}` or not) counts toward `n`.
       const body = value?.kind === 'string' && value.inner ? text.slice(value.inner[0], value.inner[1]) : null
       if (body !== null && attr.key.raw === 'class') {
         for (const token of body.split(/\s+/)) {
           if (token) classes.add(token)
         }
       } else if (body !== null && attr.key.raw === 'id') {
-        staticIds.push(body)
+        ids.push(body)
       } else {
         n++
       }
     }
   }
-  id ??= staticIds[0] ?? ''
-  return `.${[...classes].sort().join('.')}#${id}(${n},${s})`
+  return `.${[...classes].sort().join('.')}#${ids.sort().join('#')}(${n},${s})`
 }

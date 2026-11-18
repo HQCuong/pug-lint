@@ -25,6 +25,16 @@ const equal: [string, string][] = [
   ['.b(class="a")', "div(class='b a')"],
   ['div(id="x")', '#x'],
   ['.a(:class="k")', 'div(class="a" :class="k")'],
+  ['#a#b', '#b#a'],
+  ['#a(id="b")', 'div(id="b")#a'],
+  ['div(class=`a ${b}`)', 'div(x=`a ${b}`)'],
+  ['if x\n  p', 'if y\n  p'],
+  ['p= x', 'p= y'],
+  ['p= x', 'p!= x'],
+  ['- a = 1\np', '-\n  a = 1\np'],
+  ['+card(a)', '+card(b)'],
+  ['+card(class="a")', '+card.a'],
+  ['+card("x")(id="y")', '+card("z")#y'],
 ]
 
 const differ: [string, string][] = [
@@ -40,6 +50,22 @@ const differ: [string, string][] = [
   ['p #{a}', 'p a'],
   ['a(x=`a${b}`)', 'a(x="a${b}")'],
   ['div(class=cls)', '.cls'],
+  ['#x(id="y")', '#x'],
+  ['#x(id="y")', '#y'],
+  ['#a#b', '#a'],
+  ['div(id="x")#x', '#x'],
+  ['div(class=`a ${b}`)', '.a'],
+  ['div(class=`a ${b}`)', 'div'],
+  ['each x in y\n  p', 'if x\n  p'],
+  ['if a\n  p\nelse\n  p', 'if a\n  p\np'],
+  ['if a\n  p\nelse if b\n  p', 'if a\n  p\nelse\n  p'],
+  ['p= x', 'p x'],
+  ['p= x', 'p'],
+  ['- x\np', 'p'],
+  ['+card', 'card'],
+  ['+card.a', '+card'],
+  ['+card\n  p', '+card'],
+  ['+a', '+b'],
 ]
 
 describe('fingerprint', () => {
