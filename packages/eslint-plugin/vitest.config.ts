@@ -9,5 +9,6 @@ export default defineConfig({
   },
   test: {
     include: ['tests/**/*.test.ts'],
+    globalSetup: ['tests/helpers/build-tokenizer.ts'],
   },
 })

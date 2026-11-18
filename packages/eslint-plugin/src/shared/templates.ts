@@ -129,13 +129,20 @@ function htmlContent(text: string, from: number, name: string): Content {
   return { end: text.length, next: text.length }
 }
 
+/** A root-level `<template>` block. */
+interface RootTemplate {
+  lang: string | null
+  /** Content between the start and end tag; `null` for a self-closing `<template/>`. */
+  range: Range | null
+}
+
 /**
- * Content ranges of the root-level `<template>` blocks whose `lang` is `pug` or `jade`.
+ * Root-level `<template>` blocks, in document order.
  * Mirrors vue-eslint-parser's SFC tokenization: a root `<template>` with a non-HTML `lang`
  * and every other root block without `lang="html"` are raw text up to their first end tag.
  */
-export function findPugTemplateRanges(text: string): Range[] {
-  const ranges: Range[] = []
+function findRootTemplates(text: string): RootTemplate[] {
+  const templates: RootTemplate[] = []
   let i = 0
   for (let lt = text.indexOf('<', i); lt !== -1; lt = text.indexOf('<', i)) {
     const next = text[lt + 1]
@@ -153,14 +160,35 @@ export function findPugTemplateRanges(text: string): Range[] {
     }
     const tag = readStartTag(text, lt)
     i = tag.end
-    if (tag.selfClosing || !tag.terminated) continue
+    if (!tag.terminated) continue
     const lang = tag.attributes.get('lang') ?? null
+    if (tag.selfClosing) {
+      if (tag.name === 'template') templates.push({ lang, range: null })
+      continue
+    }
     const html = tag.name === 'template' ? !lang || lang === 'html' : lang === 'html'
     const content = html ? htmlContent(text, tag.end, tag.name) : rawContent(text, tag.end, tag.name)
-    if (tag.name === 'template' && lang !== null && PUG_LANGS.has(lang)) ranges.push([tag.end, content.end])
+    if (tag.name === 'template') templates.push({ lang, range: [tag.end, content.end] })
     i = content.next
   }
-  return ranges
+  return templates
+}
+
+/**
+ * Content ranges of the root-level `<template>` blocks after the first, whatever their `lang`.
+ * vue-eslint-parser runs the tokenizer on them too, but only the first is its `templateBody`.
+ */
+export function findLaterRootTemplateRanges(text: string): Range[] {
+  return findRootTemplates(text).slice(1).flatMap((t) => (t.range ? [t.range] : []))
+}
+
+/**
+ * The content range of the first root-level `<template>` when its `lang` is `pug` or `jade`, else `[]`.
+ * vue-eslint-parser's `templateBody` is only ever the first root `<template>`.
+ */
+export function findPugTemplateRanges(text: string): Range[] {
+  const [first] = findRootTemplates(text)
+  return first?.range && first.lang !== null && PUG_LANGS.has(first.lang) ? [first.range] : []
 }
 
 const CACHE_KEY = Symbol.for('pug-lint.templates')
