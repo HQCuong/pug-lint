@@ -66,6 +66,7 @@ export class PugTokenizer {
       tokens: this.tokens,
       comments: this.comments,
       expressionEnabled: () => this.expressionEnabled,
+      error: (message, offset) => this.pushError(message, offset),
     })
     const located = locate(templateText, text, this.lines, option.startingLine, option.startingColumn)
     if (located.kind === 'pug') {

@@ -5,15 +5,18 @@ import type { AttributeValue, Range } from '@pug-lint/parser'
 import { findPugTemplateRanges, getPugTemplates } from '../../src/shared/templates.ts'
 import { allNodes, parseVue } from '../helpers/parse-vue.ts'
 import type { AnyNode } from '../helpers/parse-vue.ts'
-import { toCRLF } from '../helpers/vue.ts'
+import { toCRLF, vue } from '../helpers/vue.ts'
 
 const corpusDir = new URL('../fixtures/corpus/', import.meta.url)
 const files = readdirSync(corpusDir).filter((f) => f.endsWith('.vue')).sort()
 
-const samples: [string, string][] = files.flatMap((name) => {
-  const lf = readFileSync(new URL(name, corpusDir), 'utf8').replace(/^﻿/, '')
-  return [[`${name} (as is)`, lf], [`${name} (CRLF)`, toCRLF(lf)]] as [string, string][]
-})
+// Values vue-eslint-parser would read as quoted although they are not one Pug string, and textarea text.
+const quoteStart = vue("a(:a=`'x'` :b=`\"y\" + z` :c=\"p\" + q d=`'e'`)\ntextarea {{ t }}")
+
+const samples: [string, string][] = [
+  ...files.map((name): [string, string] => [name, readFileSync(new URL(name, corpusDir), 'utf8').replace(/^\uFEFF/, '')]),
+  ['quote-start values', quoteStart] as [string, string],
+].flatMap(([name, lf]) => [[`${name} (as is)`, lf], [`${name} (CRLF)`, toCRLF(lf)]] as [string, string][])
 
 const inside = (range: Range, outer: Range): boolean => outer[0] <= range[0] && range[1] <= outer[1]
 
@@ -27,7 +30,8 @@ function cstValues(code: string): Map<number, AttributeValue> {
         for (const attr of block.attributes) {
           const v = attr.value
           if (!v) continue
-          const literalStart = v.kind === 'template' && !v.hasSubstitution ? v.inner![0] : v.range[0]
+          const insideBackticks = v.kind === 'template' && !v.hasSubstitution && !/^["']/.test(code.slice(...v.inner!))
+          const literalStart = insideBackticks ? v.inner![0] : v.range[0]
           values.set(literalStart, v)
         }
       }

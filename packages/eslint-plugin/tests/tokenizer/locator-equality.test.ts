@@ -38,7 +38,8 @@ function parsedPugRanges(result: ReturnType<typeof parseVue>): Range[] {
   if (!tpl) return []
   const lang = tpl.startTag.attributes.find((a): a is AST.VAttribute => !a.directive && a.key.name === 'lang')?.value?.value
   if (lang !== 'pug' && lang !== 'jade') return []
-  return [[tpl.startTag.range[1], tpl.endTag!.range[0]]]
+  if (!tpl.endTag) throw new Error(`root template without an end tag at ${tpl.range.join('-')}`)
+  return [[tpl.startTag.range[1], tpl.endTag.range[0]]]
 }
 
 describe.each([...corpus, ...adversarial])('locator equals templateBody: %s', (_name, code) => {

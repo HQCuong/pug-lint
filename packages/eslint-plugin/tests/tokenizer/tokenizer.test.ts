@@ -5,6 +5,7 @@ import vueParser from 'vue-eslint-parser'
 import { describe, expect, it } from 'vitest'
 import { tokenizerPath } from '../../src/index.ts'
 import { createLineIndex } from '../../src/tokenizer/line-index.ts'
+import { PugTokenizer } from '../../src/tokenizer/tokenizer.ts'
 import { eslintVersions } from '../helpers/eslint-versions.ts'
 import { lintText } from '../helpers/lint.ts'
 import { allNodes, dump, parseVue, parseVueStock, templateBody } from '../helpers/parse-vue.ts'
@@ -98,6 +99,15 @@ describe('PugTokenizer', () => {
     expect(body.tokens.find((t) => t.type === 'HTMLText')!.range).toEqual(at(code, 'hello '))
   })
 
+  it('drops text left at the template root by an early close to a token', () => {
+    const code = vue('p\n  div\n  | after')
+    const body = templateBody(parseVue(code))
+    expect(body.errors).toEqual([])
+    expect(body.children.map((c) => c.type)).toEqual(['VElement', 'VElement'])
+    expect(allNodes(body as unknown as AnyNode).some((n) => n.type === 'VText')).toBe(false)
+    expect(body.tokens.find((t) => t.type === 'HTMLText')!.range).toEqual(at(code, 'after'))
+  })
+
   it.each([
     ['p\n  div\n  | after', ['p', 'div']],
     ['li\n  li x\n  | after', ['li', 'li']],
@@ -120,6 +130,44 @@ describe('PugTokenizer', () => {
     expect(key.range).toEqual(at(code, 'on'))
     const container = (attr as AST.VDirective).value!
     expect(slice(code, container).startsWith('{')).toBe(true)
+  })
+
+  it('scans textarea text for mustaches, like stock <textarea>', () => {
+    const [textarea] = elements(templateBody(parseVue(vue('textarea {{ x }}'))))
+    const [stock] = elements(templateBody(parseVueStock('<template><textarea>{{ x }}</textarea></template>')))
+    expect(kids(stock!).map((c) => c.type)).toEqual(['VExpressionContainer'])
+    expect(kids(textarea!).map((c) => c.type)).toEqual(['VExpressionContainer'])
+  })
+
+  it('parses a backtick value whose text starts with a quote as a template literal, at exact positions', () => {
+    const code = vue("a(:a=`'x'` d=`\"e\"`)")
+    const body = templateBody(parseVue(code))
+    expect(body.errors).toEqual([])
+    const [a] = elements(body)
+    const [dirA, plainD] = a!.startTag.attributes
+    const expr = (dirA as AST.VDirective).value!.expression!
+    expect(expr.type).toBe('TemplateLiteral')
+    expect(expr.range).toEqual(at(code, "`'x'`"))
+    const literal = (plainD as AST.VAttribute).value!
+    expect(literal.range).toEqual(at(code, '`"e"`'))
+  })
+
+  it('reports an expression value starting with a quote instead of mislocating it', () => {
+    const src = vue('a(:c="p" + q title="t")')
+    const parsed = templateBody(parseVue(src))
+    expect(parsed.errors).toHaveLength(1)
+    const error = parsed.errors[0]!
+    expect(error.message).toMatch(/^Pug: .*":c"/)
+    expect(error.index).toBe(at(src, '"p" + q')[0])
+    expect('code' in error).toBe(false)
+    const [c, title] = elements(parsed)[0]!.startTag.attributes
+    // An empty value over the leading string: no expression, nothing at a wrong position.
+    expect(c!.value!.range).toEqual(at(src, '"p"'))
+    expect((c as AST.VDirective).value!.expression).toBeNull()
+    expect((title as AST.VAttribute).value!.value).toBe('t')
+    for (const token of parsed.tokens.filter((t) => t.range[0] >= at(src, 'a(')[0] && t.range[1] <= at(src, '</template>')[0])) {
+      expect(token.value, token.type).toBe(src.slice(...token.range))
+    }
   })
 
   it('keeps the VLiteral of a plain backtick attribute inside the backticks', () => {
@@ -198,7 +246,7 @@ describe('PugTokenizer', () => {
     expect(errors).toHaveLength(1)
     const error = errors[0]!
     expect(error.message.startsWith('Pug: ')).toBe(true)
-    expect(typeof error.index).toBe('number')
+    expect(error.index).toBe(at(code, '"x')[0])
     expect(typeof error.lineNumber).toBe('number')
     expect(typeof error.column).toBe('number')
     expect('code' in error).toBe(false)
@@ -259,6 +307,27 @@ describe('PugTokenizer', () => {
       expect(existsSync(new URL('../../dist/index.d.ts', import.meta.url))).toBe(true)
     },
   )
+})
+
+describe('PugTokenizer construction', () => {
+  it('reports a template it cannot locate once, with no tokens', () => {
+    const text = vue('div {{ x }}')
+    const content = text.slice(...at(text, '\ndiv {{ x }}\n'))
+    const tokenizer = new PugTokenizer(content, text, { startingLine: 2, startingColumn: 0 })
+    expect(tokenizer.nextToken()).toBeNull()
+    expect(tokenizer.tokens).toEqual([])
+    expect(tokenizer.errors).toHaveLength(1)
+    expect(tokenizer.errors[0]!.message).toContain('x-pug-source-mismatch')
+    expect('code' in tokenizer.errors[0]!).toBe(false)
+  })
+
+  it('reports a starting line outside the text the same way', () => {
+    const text = vue('div')
+    const tokenizer = new PugTokenizer('\ndiv\n', text, { startingLine: 99, startingColumn: 0 })
+    expect(tokenizer.nextToken()).toBeNull()
+    expect(tokenizer.tokens).toEqual([])
+    expect(tokenizer.errors.map((e) => e.message)).toEqual([expect.stringContaining('x-pug-source-mismatch')])
+  })
 })
 
 describe('createLineIndex', () => {

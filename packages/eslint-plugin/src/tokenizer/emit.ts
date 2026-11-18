@@ -78,6 +78,8 @@ export interface EmitContext {
   comments: Token[]
   /** Read when text is emitted: vue-eslint-parser turns expressions off inside `v-pre`. */
   expressionEnabled(): boolean
+  /** Reports a problem at `offset` as a `Pug: ` parse error. */
+  error(message: string, offset: number): void
 }
 
 // vue-eslint-parser's HTML_VOID_ELEMENT_TAGS: elements it never pushes on its stack.
@@ -94,12 +96,22 @@ const NON_PHRASING = new Set([
   'param', 'rp', 'rt', 'source', 'style', 'summary', 'tbody', 'td', 'tfoot', 'th', 'thead', 'title', 'tr', 'track',
 ])
 const DT_DD = /^d[dt]$/u
-// Elements whose text is not scanned for mustaches (plan Design §3).
-const RAW_TEXT_ELEMENTS = new Set(['script', 'style', 'textarea'])
+// Elements whose text is not scanned for mustaches (Vue does interpolate inside `textarea`).
+const RAW_TEXT_ELEMENTS = new Set(['script', 'style'])
+const QUOTES = new Set(['"', "'"])
 const PLACEHOLDER_PARENT = Object.freeze({})
 const MUSTACHE = /\{\{([\s\S]*?)\}\}/g
 
 const foldCrlf = (s: string): string => s.replace(/\r\n/g, '\n')
+
+/** Offset of the quote closing the string that opens at `open`, before `end`; -1 if none. */
+function closingQuote(text: string, open: number, end: number): number {
+  for (let i = open + 1; i < end; i++) {
+    if (text[i] === '\\') i++
+    else if (text[i] === text[open]) return i
+  }
+  return -1
+}
 
 /** End offset of `node` and everything nested in it. */
 function lastEnd(node: PugNode): number {
@@ -225,7 +237,7 @@ export class Emitter {
     const key: VIdentifier = {
       type: 'VIdentifier', parent: null, name: rawKey.raw.toLowerCase(), rawName: rawKey.raw, ...this.loc(...rawKey.range),
     }
-    const value = rawValue ? this.literal(rawValue) : null
+    const value = rawValue ? this.literal(rawValue, rawKey.raw) : null
     const node: VAttribute = {
       type: 'VAttribute', parent: PLACEHOLDER_PARENT, directive: false, key, value, ...this.loc(...attribute.range),
     }
@@ -235,18 +247,32 @@ export class Emitter {
   }
 
   /**
-   * string → full range incl. quotes, value = inner text. Template without substitution → range = inner
-   * (backticks excluded), so vue-eslint-parser parses a directive's expression at exact positions.
-   * Anything else → full range, value = raw text (best effort: a Pug compile-time expression).
+   * vue-eslint-parser treats a value whose first character is `"` or `'` as quoted: it parses
+   * `value` one character after the range start. So:
+   * - string → full range incl. quotes, value = inner text;
+   * - template without substitution → range = inner (backticks excluded), value = inner text, so a
+   *   directive's expression is parsed at exact positions; when the inner text itself starts with a
+   *   quote, the full range incl. backticks instead (parsed as a template literal, still exact);
+   * - expression starting with a quote (`"a" + b`) → a `Pug:` error, and an empty VLiteral over the
+   *   leading string only (`"a"`): vue-eslint-parser then builds an empty expression with its quote
+   *   tokens in place, where any other value would be parsed at wrong positions. Unterminated (the
+   *   parser already reported it) → no value;
+   * - anything else → full range, value = raw text (best effort: a Pug compile-time expression).
    */
-  private literal(v: AttributeValue): VLiteral {
+  private literal(v: AttributeValue, keyRaw: string): VLiteral | null {
     const { text } = this.ctx
     let range = v.range
     let value = v.raw
     if (v.kind === 'string' && v.inner) value = text.slice(...v.inner)
-    else if (v.kind === 'template' && !v.hasSubstitution && v.inner) {
+    else if (v.kind === 'template' && !v.hasSubstitution && v.inner && !QUOTES.has(text[v.inner[0]]!)) {
       range = v.inner
       value = text.slice(...v.inner)
+    } else if (v.kind === 'expression' && QUOTES.has(text[v.range[0]]!)) {
+      const close = closingQuote(text, v.range[0], v.range[1])
+      if (close === -1) return null
+      this.ctx.error(`the value of attribute "${keyRaw}" starts with a quote but is not a single string; it is not linted`, v.range[0])
+      range = [v.range[0], close + 1]
+      value = ''
     }
     this.token('HTMLLiteral', range)
     return { type: 'VLiteral', parent: null, value: foldCrlf(value), ...this.loc(...range) }
