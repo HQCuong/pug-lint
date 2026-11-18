@@ -224,6 +224,27 @@ describe('parsePug: interpolation', () => {
     expect(partTypes(asText(inner.tag.children[0]).parts)).toEqual(['Interpolation'])
   })
 
+  it('ends the text of a #[…] at its first "]", reading quotes and brackets there as plain text (as Pug does)', () => {
+    const src = "p #[span(title='x') it's] y #[b it's [x] z] w"
+    const doc = parse(src)
+    expect(doc.errors).toEqual([])
+    const text = asText(asTag(doc.children[0]).children[0])
+    expect(partTypes(text.parts)).toEqual(['TagInterpolation', 'Raw', 'TagInterpolation', 'Raw'])
+    expect(text.parts[0]!.range).toEqual(at(src, "#[span(title='x') it's]"))
+    expect(text.parts[2]!.range).toEqual(at(src, "#[b it's [x]"))
+    expect(slice(src, text.parts[3]!.range)).toBe(' z] w')
+  })
+
+  it('keeps the head and code of a #[…] JS-aware, and #[…] / #{…} nested in its text', () => {
+    const src = "p #[a(title=']') #{'x]'} #[i \"]] #[b= 'c]d'] e"
+    const doc = parse(src)
+    expect(doc.errors).toEqual([])
+    const text = asText(asTag(doc.children[0]).children[0])
+    expect(partTypes(text.parts)).toEqual(['TagInterpolation', 'Raw', 'TagInterpolation', 'Raw'])
+    expect(text.parts[0]!.range).toEqual(at(src, "#[a(title=']') #{'x]'} #[i \"]]"))
+    expect(text.parts[2]!.range).toEqual(at(src, "#[b= 'c]d']"))
+  })
+
   it('interpolates in pipe, block and html text', () => {
     const src = 'div\n  | #{a}\n  p.\n    #{b}\n  <b>#{c}</b>'
     const doc = parse(src)

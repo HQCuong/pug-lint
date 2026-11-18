@@ -83,19 +83,22 @@ export interface EmitContext {
 }
 
 // vue-eslint-parser's HTML_VOID_ELEMENT_TAGS: elements it never pushes on its stack.
-const VOID_ELEMENTS = new Set([
+export const VOID_ELEMENTS: ReadonlySet<string> = new Set([
   'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr',
 ])
 // vue-eslint-parser's HTML_CAN_BE_LEFT_OPEN_TAGS, HTML_NON_FHRASING_TAGS and DT_DD: a start tag
-// closes the open element early (`closeCurrentElementIfNecessary`), as in HTML.
-const CAN_BE_LEFT_OPEN = new Set(['colgroup', 'li', 'options', 'p', 'td', 'tfoot', 'th', 'thead', 'tr', 'source'])
-const NON_PHRASING = new Set([
+// closes the open element early (`closeCurrentElementIfNecessary`), as in HTML. Exported for the
+// HTML-twin parity test, which checks each tag against stock vue-eslint-parser (drift guard).
+export const CAN_BE_LEFT_OPEN: ReadonlySet<string> = new Set([
+  'colgroup', 'li', 'options', 'p', 'td', 'tfoot', 'th', 'thead', 'tr', 'source',
+])
+export const NON_PHRASING: ReadonlySet<string> = new Set([
   'address', 'article', 'aside', 'base', 'blockquote', 'body', 'caption', 'col', 'colgroup', 'dd', 'details',
   'dialog', 'div', 'dl', 'dt', 'fieldset', 'figcaption', 'figure', 'footer', 'form', 'h1', 'h2', 'h3', 'h4', 'h5',
   'h6', 'head', 'header', 'hgroup', 'hr', 'html', 'legend', 'li', 'menuitem', 'meta', 'optgroup', 'option',
   'param', 'rp', 'rt', 'source', 'style', 'summary', 'tbody', 'td', 'tfoot', 'th', 'thead', 'title', 'tr', 'track',
 ])
-const DT_DD = /^d[dt]$/u
+export const DT_DD = /^d[dt]$/u
 // Elements whose text is not scanned for mustaches (Vue does interpolate inside `textarea`).
 const RAW_TEXT_ELEMENTS = new Set(['script', 'style'])
 const QUOTES = new Set(['"', "'"])

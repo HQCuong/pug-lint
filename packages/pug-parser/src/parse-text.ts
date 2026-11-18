@@ -58,6 +58,54 @@ export function parseInlineText(
 }
 
 /**
+ * The `]` closing the `#[…]` whose tag starts at `inner`, before `end`; -1 if none. As in pug-lexer,
+ * only the tag heads (attributes) and `=`/`!=` code are read as JS: inline text ends at its first
+ * `]`, quotes and brackets in it are plain text, and a `#[…]`/`#{…}`/`!{…}` in it is skipped whole.
+ * Without a tag at `inner`, the whole content is read as JS (the caller reports it).
+ */
+function interpolationClose(text: string, inner: number, end: number, errs: PugParseError[]): number {
+  let s = inner
+  for (;;) {
+    const head = parseTagHead(text, s, end)
+    if (!head.name && head.shorthands.length === 0) break
+    const pos = head.pos
+    if (text[pos] === ']') return pos
+    if (text[pos] === ' ') return textClose(text, pos + 1, end, errs)
+    if (text[pos] === ':' && text[pos + 1] === ' ') {
+      s = pos + 1
+      while (s < end && (text[s] === ' ' || text[s] === '\t')) s++
+      continue
+    }
+    if (head.errs.length > 0) {
+      errs.push(...head.errs)
+      return -1
+    }
+    s = pos
+    break
+  }
+  const close = skipExpression(text, s, end, NO_STOPS, errs)
+  return close < end && text[close] === ']' ? close : -1
+}
+
+/** The first `]` in the inline text at `i` of a `#[…]` (see `interpolationClose`); -1 if none before `end`. */
+function textClose(text: string, i: number, end: number, errs: PugParseError[]): number {
+  while (i < end) {
+    if (text[i] === ']') return i
+    if (text[i] === '\\' && opensAt(text, i + 1, end)) {
+      i += 3
+    } else if (opensAt(text, i, end)) {
+      const nested = text[i + 1] === '['
+      const close = nested ? interpolationClose(text, i + 2, end, errs) : skipExpression(text, i + 2, end, NO_STOPS, errs)
+      if (close < 0 || close >= end || text[close] !== (nested ? ']' : '}')) return -1
+      i = close + 1
+    } else {
+      i++
+    }
+  }
+  return -1
+}
+
+/**
  * The `#[…]` at `start`, reading no further than `end`. Null (with an error)
  * when it is not closed or holds no tag; the caller keeps its text as raw.
  */
@@ -66,8 +114,8 @@ function parseTagInterpolation(
 ): { part: TextPart; next: number } | null {
   const inner = start + 2
   const errs: PugParseError[] = []
-  const close = skipExpression(text, inner, end, NO_STOPS, errs)
-  if (close >= end || text[close] !== ']') {
+  const close = interpolationClose(text, inner, end, errs)
+  if (close < 0) {
     errors.push(...errs)
     if (errs.length === 0) {
       errors.push({ code: 'unterminated-interpolation', message: 'Tag interpolation is not closed with "]"', offset: start })

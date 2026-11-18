@@ -77,14 +77,16 @@ function withoutShorthands(text: string, range: Range): string {
 /**
  * `text` with its (single) Pug template replaced by `pug.render` HTML. The `<template>` tag keeps
  * its other attributes (`functional`); only `lang` is removed. Throws when Pug cannot compile it.
+ * Class/id shorthands are removed first unless `keepShorthands` (the tokenizer parity test compares them).
  */
-export function htmlTwin(text: string): string {
+export function htmlTwin(text: string, { keepShorthands = false } = {}): string {
   const [range] = findPugTemplateRanges(text)
   if (!range) throw new Error('htmlTwin(): no Pug template')
   const open = text.lastIndexOf('<template', range[0])
   const close = text.indexOf('</template>', range[1]) + '</template>'.length
   const openTag = text.slice(open, range[0]).replace(/\s+lang\s*=\s*(["'])(pug|jade)\1/, '')
-  const html = pug.render(dedent(withoutShorthands(text, range)), { doctype: 'html' })
+  const body = keepShorthands ? text.slice(range[0], range[1]) : withoutShorthands(text, range)
+  const html = pug.render(dedent(body), { doctype: 'html' })
   return `${text.slice(0, open)}${openTag}\n${html}\n</template>${text.slice(close)}`
 }
 
