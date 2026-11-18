@@ -1,6 +1,6 @@
 <template lang="pug">
-div(class='box' :title='label')
-  a(href='/x' :class="{ on: on }") go
+div(class="box" :title="label")
+  a(href="/x" :class="{ on: on }") go
   span(data-x='a "b" c') quoted
   p(:style=`{ color: c }`) tpl
 </template>

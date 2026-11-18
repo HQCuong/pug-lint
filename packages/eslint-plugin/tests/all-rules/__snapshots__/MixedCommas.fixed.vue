@@ -7,7 +7,7 @@
     title="x"
   )
   a(href="/a" target="_blank" rel="noopener") Link
-  input(v-model="query" type="text" placeholder='Search')
+  input(v-model="query" type="text" placeholder="Search")
 </template>
 
 <script setup>

@@ -8,7 +8,7 @@ div
   )
   template(#default="{ item }")
     span {{ item }}
-  button(:disabled='!ok' @click.prevent="go()") Go
+  button(:disabled="!ok" @click.prevent="go()") Go
   div(:class="{ a: true, b: false }" :style=`{ width: w + 'px' }`)
   div(
     :obj="{
