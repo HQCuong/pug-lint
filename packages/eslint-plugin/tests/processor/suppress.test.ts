@@ -47,3 +47,12 @@ describe('suppressMessages', () => {
     expect(suppressMessages(html, messages, suppress)).toBe(messages)
   })
 })
+
+describe('suppressMessages with a BOM', () => {
+  it('locates messages on the BOM-stripped text', () => {
+    // Line 1, column 22 is the first content offset (just after `>`) of the BOM-stripped text.
+    const firstContent = msg('vue/html-indent', 1, 22)
+    const onTag = msg('vue/html-indent', 1, 21)
+    expect(suppressMessages(`\uFEFF${text}`, [firstContent, onTag], suppress)).toEqual([onTag])
+  })
+})

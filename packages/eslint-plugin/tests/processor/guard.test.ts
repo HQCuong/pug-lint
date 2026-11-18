@@ -159,10 +159,20 @@ describe('guardMessages', () => {
     const safe: Linter.LintSuggestion = { desc: 'safe', fix: { range: at(text, 'x="1"'), text: 'y="1"' } }
     const breaking: Linter.LintSuggestion = { desc: 'breaking', fix: { range: at(text, ')'), text: '' } }
     const message: Linter.LintMessage = { ruleId: 'x/y', message: 'm', severity: 1, ...position(text, at(text, 'a(')[0]), suggestions: [safe, breaking] }
-    const { result } = guard(text, [message])
+    const { result, drops } = guard(text, [message])
     expect(result).toHaveLength(1)
     expect(result[0]!.message).toBe('m')
     expect(result[0]!.suggestions).toEqual([safe])
+    expect(drops).toEqual([[message, 'parse-error']])
+  })
+
+  it('deletes `suggestions` when every suggestion is removed', () => {
+    const text = body('a(x="1")')
+    const breaking: Linter.LintSuggestion = { desc: 'breaking', fix: { range: at(text, ')'), text: '' } }
+    const message: Linter.LintMessage = { ruleId: 'x/y', message: 'm', severity: 1, line: 2, column: 1, suggestions: [breaking] }
+    const { result } = guard(text, [message])
+    expect(result).toHaveLength(1)
+    expect('suggestions' in result[0]!).toBe(false)
   })
 
   it('never mutates its input', () => {
@@ -179,6 +189,89 @@ describe('guardMessages', () => {
     const snapshot = structuredClone(messages)
     guardMessages(text, messages)
     expect(messages).toEqual(snapshot)
+  })
+
+  it('drops a fix that adds a root template after the Pug template', () => {
+    const text = body('p Hello')
+    const tEnd = at(text, '</template>')[0]
+    const message = rangeMsg(text, [tEnd, tEnd], '</template>\n<template lang="pug">\na(href="x\n')
+    const { result, reasons } = guard(text, [message])
+    expect(result[0]!.fix).toBeUndefined()
+    expect(reasons).toEqual(['structure'])
+  })
+
+  it('drops a fix that ends the Pug template early', () => {
+    // The shortened template keeps its fingerprint (text content is not part of it).
+    const text = body('p Hello world')
+    const message = fixMsg(text, ' world', ' </template> world')
+    const { result, reasons } = guard(text, [message])
+    expect(result[0]!.fix).toBeUndefined()
+    expect(reasons).toEqual(['structure'])
+  })
+
+  it('drops a fix that straddles the start tag ">"', () => {
+    const text = body('p Hello')
+    const tStart = at(text, '>')[1]
+    const { result, reasons } = guard(text, [rangeMsg(text, [tStart - 1, tStart + 1], '>\n')])
+    expect(result[0]!.fix).toBeUndefined()
+    expect(reasons).toEqual(['boundary'])
+  })
+
+  it('checks zero-width insertions at the template edges as inside fixes', () => {
+    const text = body('p Hello')
+    const tStart = at(text, '>')[1]
+    const tEnd = at(text, '</template>')[0]
+    const safe = rangeMsg(text, [tStart, tStart], '\n')
+    const atStart = rangeMsg(text, [tStart, tStart], 'a(')
+    const atEnd = rangeMsg(text, [tEnd, tEnd], 'a(')
+    expect(guard(text, [safe]).drops).toEqual([])
+    expect(guard(text, [atStart]).reasons).toEqual(['parse-error'])
+    expect(guard(text, [atEnd]).reasons).toEqual(['parse-error'])
+  })
+
+  it('verifies the combination with the outside fixes ESLint merges in the same pass', () => {
+    // The outside fix ends at the content start, so ESLint skips the insertion A there.
+    // A and B together would make a and b siblings, but ESLint applies only O and B.
+    const text = '<template lang="pug">a\n  b\n</template>\n'
+    const tStart = at(text, '>')[1]
+    const outside = rangeMsg(text, [0, tStart], '<template  lang="pug">')
+    const fixA = rangeMsg(text, [tStart, tStart], ' ')
+    const fixB = fixMsg(text, '  b', ' b')
+    const before = templateFingerprint(text)
+    expect(templateFingerprint(applyFixes(text, [fixA.fix!, fixB.fix!]).output)).not.toBe(before)
+
+    const { result, drops } = guard(text, [outside, fixA, fixB])
+    expect(drops).toEqual([])
+    expect(result.map((m) => m.fix)).toEqual([outside.fix, fixA.fix, fixB.fix])
+    expect(templateFingerprint(applyFixes(text, result.map((m) => m.fix!)).output)).toBe(before)
+  })
+
+  it('drops a template fix when an outside fix in the same pass changes the template', () => {
+    const text = body('a(x,y)')
+    const langFix = fixMsg(text, 'pug', 'html')
+    const inside = fixMsg(text, ',', ' ')
+    const { result, drops } = guard(text, [langFix, inside])
+    expect(result[0]).toBe(langFix)
+    expect(result[1]!.fix).toBeUndefined()
+    expect(drops).toEqual([[inside, 'combined']])
+  })
+
+  it('strips a BOM: fix ranges refer to the BOM-stripped text', () => {
+    const text = body('a(x,y)\nb(x y)')
+    const safe = fixMsg(text, ',', ' ')
+    const breaking = fixMsg(text, ' y)', ')')
+    const { result, drops } = guard(`\uFEFF${text}`, [safe, breaking])
+    expect(result[0]).toBe(safe)
+    expect(drops).toEqual([[breaking, 'structure']])
+  })
+
+  it('does not put candidate texts into the shared CST cache', () => {
+    const text = body('a(x,y)')
+    const cacheKey = Symbol.for('pug-lint.templates')
+    delete (globalThis as Record<symbol, unknown>)[cacheKey]
+    guardMessages(text, [fixMsg(text, ',', ' '), fixMsg(text, 'y', 'z')])
+    const cache = (globalThis as Record<symbol, unknown>)[cacheKey] as Map<string, unknown>
+    expect([...cache.keys()]).toEqual([text])
   })
 
   it('reports a dropped fix through onDrop only once per fix', () => {

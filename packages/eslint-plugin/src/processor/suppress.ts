@@ -20,10 +20,12 @@ const inside = (offset: number, ranges: Range[]): boolean => ranges.some(([start
 
 /** `messages` without those whose `ruleId` is in `suppress` and whose start lies inside a Pug template. */
 export function suppressMessages(
-  text: string,
+  rawText: string,
   messages: Linter.LintMessage[],
   suppress: ReadonlySet<string>,
 ): Linter.LintMessage[] {
+  // Message positions refer to the BOM-stripped text, as in ESLint.
+  const text = rawText.charCodeAt(0) === 0xfeff ? rawText.slice(1) : rawText
   const ranges = getPugTemplates(text).map((t) => t.range)
   if (ranges.length === 0) return messages
   const index = createLineIndex(text)
