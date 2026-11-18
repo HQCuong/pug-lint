@@ -34,7 +34,7 @@ export function buildConfigs(plugin: ConfigPlugin, options: ConfigOptions = {}):
       parserOptions: { templateTokenizer: { pug: plugin.tokenizerPath, jade: plugin.tokenizerPath } },
     },
     processor: createProcessor({ keepVueRules: options.keepVueRules ?? [] }),
-    rules: Object.fromEntries(vueCrashing.map((id) => [id, 'off'])),
+    rules: Object.fromEntries(Object.keys(vueCrashing).map((id) => [id, 'off'])),
   }]
   const recommendedRules: Linter.RulesRecord = {}
   for (const [name, rule] of Object.entries(plugin.rules)) {

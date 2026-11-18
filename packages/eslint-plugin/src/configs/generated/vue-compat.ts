@@ -16,5 +16,11 @@ export const vueSuppressed: Record<string, string> = {
   'vue/html-quotes': 'seed',
 }
 
-/** `vue/*` rules that crash on Pug templates; `configs.base` turns them off. */
-export const vueCrashing: string[] = []
+/** `vue/*` rules that crash on Pug templates, with the reason; `configs.base` turns them off. */
+export const vueCrashing: Record<string, string> = {
+  // `getLastToken(endTag)` is null: a Pug end tag is zero-width and has no token. A zero-width token
+  // cannot fix it: vue-eslint-parser's token store indexes `range[1] - 1`, so it breaks lookups.
+  'vue/html-closing-bracket-newline': 'crash',
+  'vue/html-closing-bracket-spacing': 'crash',
+  'vue/html-indent': 'crash',
+}

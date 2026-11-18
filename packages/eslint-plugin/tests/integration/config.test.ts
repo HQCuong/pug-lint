@@ -41,8 +41,11 @@ describe('configs.base', () => {
         expect(resolved.processor).toBe(plugin.configs.base[0]!.processor)
         expect((resolved.processor as Linter.Processor).meta!.name).toBe('vue-pug/vue')
         const vueOnly = await calculate(v, vueRecommended, 'A.vue')
+        // A suppressed (not crashing) rule keeps eslint-plugin-vue's setting; a crashing one is off.
+        expect(vueOnly.rules!['vue/max-attributes-per-line']).toBeDefined()
+        expect(resolved.rules!['vue/max-attributes-per-line']).toEqual(vueOnly.rules!['vue/max-attributes-per-line'])
         expect(vueOnly.rules!['vue/html-indent']).toBeDefined()
-        expect(resolved.rules!['vue/html-indent']).toEqual(vueOnly.rules!['vue/html-indent'])
+        expect(resolved.rules!['vue/html-indent']).toEqual([0])
       })
 
       it('puts no function under parserOptions', async () => {
