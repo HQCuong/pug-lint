@@ -11,6 +11,28 @@ const ruleNames = readdirSync(new URL('../rules/', import.meta.url))
   .map((file) => file.slice(0, -3))
   .sort()
 
+/** Sidebar groups for the rules; the build fails if a rule page is in none of them. */
+const RULE_GROUPS: [string, string[]][] = [
+  ['Indentation', ['indent']],
+  [
+    'Attribute blocks',
+    [
+      'attribute-commas',
+      'attribute-equals-spacing',
+      'attribute-parens-newline',
+      'attribute-parens-spacing',
+      'attribute-quotes',
+      'max-attributes-per-line',
+      'no-multi-spaces',
+    ],
+  ],
+  ['Tags and shorthands', ['implicit-div', 'prefer-shorthand', 'self-closing']],
+  ['Pug features', ['no-pug-control-flow']],
+]
+const grouped = RULE_GROUPS.flatMap(([, names]) => names)
+const ungrouped = ruleNames.filter((name) => !grouped.includes(name))
+if (ungrouped.length > 0) throw new Error(`Add these rules to RULE_GROUPS in docs/.vitepress/config.ts: ${ungrouped.join(', ')}`)
+
 export default defineConfig({
   title: 'pug-lint',
   description: 'ESLint linting and formatting for Pug templates in Vue single-file components.',
@@ -22,15 +44,29 @@ export default defineConfig({
   sitemap: { hostname: SITE_URL },
   head: [
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
+    ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
+    ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
+    [
+      'link',
+      {
+        rel: 'stylesheet',
+        href: 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=JetBrains+Mono:wght@400;600&display=swap',
+      },
+    ],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'pug-lint' }],
     ['meta', { property: 'og:description', content: 'ESLint linting and formatting for Pug templates in Vue SFCs.' }],
+    ['meta', { property: 'og:image', content: `${SITE_URL}/og.png` }],
+    ['meta', { property: 'og:image:width', content: '2400' }],
+    ['meta', { property: 'og:image:height', content: '1260' }],
+    ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:image', content: `${SITE_URL}/og.png` }],
   ],
   vite: {
     plugins: [llmstxt()],
   },
   themeConfig: {
-    logo: '/favicon.svg',
+    logo: '/logo.svg',
     nav: [
       { text: 'Guide', link: '/guide/getting-started', activeMatch: '/guide/' },
       { text: 'Rules', link: '/rules/', activeMatch: '/rules/' },
@@ -66,13 +102,11 @@ export default defineConfig({
         },
       ],
       '/rules/': [
-        {
-          text: 'Rules',
-          items: [
-            { text: 'Overview', link: '/rules/' },
-            ...ruleNames.map((name) => ({ text: `vue-pug/${name}`, link: `/rules/${name}` })),
-          ],
-        },
+        { text: 'Rules', items: [{ text: 'Overview', link: '/rules/' }] },
+        ...RULE_GROUPS.map(([text, names]) => ({
+          text,
+          items: names.map((name) => ({ text: name, link: `/rules/${name}` })),
+        })),
       ],
     },
     socialLinks: [{ icon: 'github', link: REPO }],

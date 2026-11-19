@@ -1,5 +1,7 @@
 ---
-title: 'pug-lint-parser'
+title: pug-lint-parser
 ---
 
-<!--@include: ../../packages/pug-parser/README.md-->
+# pug-lint-parser
+
+<!--@include: ../../packages/pug-parser/README.md#docs-->

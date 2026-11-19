@@ -1,4 +1,21 @@
+<div align="center">
+
+<a href="https://pug-lint.dev/"><img src="https://pug-lint.dev/logo.svg" alt="" width="64" height="64"></a>
+
 # eslint-plugin-pug-vue
+
+ESLint for Pug templates in Vue single-file components.
+
+[![npm version](https://img.shields.io/npm/v/eslint-plugin-pug-vue?color=2e8b62&label=npm)](https://www.npmjs.com/package/eslint-plugin-pug-vue)
+[![npm downloads](https://img.shields.io/npm/dm/eslint-plugin-pug-vue?color=2e8b62)](https://www.npmjs.com/package/eslint-plugin-pug-vue)
+[![CI](https://github.com/HQCuong/pug-lint/actions/workflows/ci.yml/badge.svg)](https://github.com/HQCuong/pug-lint/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/npm/l/eslint-plugin-pug-vue?color=2e8b62)](https://github.com/HQCuong/pug-lint/blob/main/LICENSE)
+
+**[Documentation](https://pug-lint.dev/)** · [Getting started](https://pug-lint.dev/guide/getting-started) · [Rules](https://pug-lint.dev/rules/)
+
+</div>
+
+---
 
 ESLint linting and formatting for `<template lang="pug">` (and `lang="jade"`) in Vue single-file
 components.
@@ -10,8 +27,6 @@ components.
 - Every fix that touches a Pug template is checked before ESLint applies it, so `--fix` and
   fix-on-save do not break templates.
 - No Prettier, no separate formatter: fixes come from ESLint.
-
-**Documentation: <https://pug-lint.dev>**
 
 ## Requirements
 

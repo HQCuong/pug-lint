@@ -1,0 +1,271 @@
+/*
+ * pug-lint theme. Colors come from the subject: a pug's black muzzle and fawn coat, and Vue's
+ * green for links and actions. Headings use Bricolage Grotesque; code uses JetBrains Mono, where
+ * indentation has to read clearly.
+ */
+:root {
+  --pl-muzzle: #2b2730;
+  --pl-fawn: #e3c29b;
+  --pl-leaf: #2e8b62;
+  --pl-leaf-bright: #3fb27f;
+  --pl-mist: #f5f6f3;
+  --pl-warn: #d9962b;
+
+  --vp-font-family-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --pl-font-display: 'Bricolage Grotesque', var(--vp-font-family-base);
+
+  --vp-c-brand-1: var(--pl-leaf);
+  --vp-c-brand-2: #257452;
+  --vp-c-brand-3: var(--pl-leaf);
+  --vp-c-brand-soft: rgba(46, 139, 98, 0.12);
+
+  --vp-button-brand-bg: var(--pl-muzzle);
+  --vp-button-brand-hover-bg: #3d3843;
+  --vp-button-brand-active-bg: #1f1c23;
+  --vp-button-brand-text: #fff;
+  --vp-button-brand-hover-text: #fff;
+
+  --vp-c-bg: #ffffff;
+  --vp-c-bg-alt: var(--pl-mist);
+  --vp-home-hero-name-color: var(--pl-muzzle);
+}
+
+:root:not(.dark) .VPNavBar:not(.home.top) .content-body,
+:root:not(.dark) .VPLocalNav {
+  background-color: rgba(255, 255, 255, 0.92);
+}
+
+.dark {
+  --vp-c-brand-1: #6cc89d;
+  --vp-c-brand-2: var(--pl-leaf-bright);
+  --vp-c-brand-3: var(--pl-leaf);
+  --vp-c-brand-soft: rgba(63, 178, 127, 0.16);
+
+  --vp-button-brand-bg: var(--pl-fawn);
+  --vp-button-brand-hover-bg: #edd3b3;
+  --vp-button-brand-active-bg: #d8b083;
+  --vp-button-brand-text: var(--pl-muzzle);
+  --vp-button-brand-hover-text: var(--pl-muzzle);
+
+  --vp-c-bg: #1d1a21;
+  --vp-c-bg-alt: #17151a;
+  --vp-c-bg-elv: #242128;
+  --vp-c-bg-soft: #26232b;
+  --vp-home-hero-name-color: var(--pl-fawn);
+}
+
+/* Headings */
+.vp-doc h1,
+.vp-doc h2,
+.vp-doc h3,
+.VPHero .name,
+.VPHero .text,
+.VPFeature .title,
+.home-heading {
+  font-family: var(--pl-font-display);
+  letter-spacing: -0.01em;
+}
+.vp-doc h1 {
+  font-size: 2.4rem;
+  line-height: 1.15;
+  font-weight: 700;
+}
+.vp-doc h2 {
+  font-weight: 650;
+  border-top-color: var(--vp-c-divider);
+}
+
+/* Rule ids in headings and tables read as code */
+.vp-doc h1 code,
+.vp-doc table td:first-child code {
+  font-family: var(--vp-font-family-mono);
+}
+
+/* Code: a little more room so indentation is easy to count */
+.vp-doc div[class*='language-'] {
+  border-radius: 12px;
+}
+.vp-doc div[class*='language-'] pre {
+  line-height: 1.7;
+}
+
+/* Tables (the rules table, the compatibility table) */
+.vp-doc table {
+  display: table;
+  width: 100%;
+  font-size: 14px;
+}
+.vp-doc th {
+  font-family: var(--pl-font-display);
+  font-weight: 650;
+}
+
+/* Custom containers use the palette */
+.vp-doc .custom-block.tip {
+  border-color: transparent;
+  background-color: var(--vp-c-brand-soft);
+}
+
+/* Logo */
+.VPNavBarTitle .logo {
+  height: 26px;
+}
+.VPNavBarTitle .title {
+  font-family: var(--pl-font-display);
+  font-weight: 700;
+  font-size: 17px;
+}
+
+:focus-visible {
+  outline-color: var(--vp-c-brand-1);
+}
+
+/* ---------- Home ---------- */
+.pl-hero,
+.pl-section {
+  max-width: 1152px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.pl-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 56px;
+  align-items: center;
+  padding-top: 72px;
+  padding-bottom: 88px;
+}
+.pl-hero h1 {
+  margin: 0;
+  font-size: clamp(2.5rem, 5vw, 3.6rem);
+  line-height: 1.04;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+  color: var(--vp-c-text-1);
+  text-wrap: balance;
+}
+.pl-lead {
+  margin: 20px 0 0;
+  max-width: 34em;
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--vp-c-text-2);
+}
+.pl-lead code {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.85em;
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-1);
+}
+.pl-install {
+  margin-top: 28px;
+  max-width: 26rem;
+}
+.pl-install div[class*='language-'] {
+  margin: 0 !important;
+}
+.pl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+.pl-button {
+  display: inline-block;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 15px;
+  border: 1px solid var(--vp-c-divider);
+  color: var(--vp-c-text-1);
+  transition: border-color 0.15s, background-color 0.15s;
+}
+.pl-button:hover {
+  border-color: var(--vp-c-text-3);
+}
+.pl-button.primary {
+  border-color: transparent;
+  background: var(--vp-button-brand-bg);
+  color: var(--vp-button-brand-text);
+}
+.pl-button.primary:hover {
+  background: var(--vp-button-brand-hover-bg);
+}
+.pl-button:focus-visible {
+  outline: 2px solid var(--vp-c-brand-1);
+  outline-offset: 2px;
+}
+
+.pl-section {
+  padding-top: 8px;
+  padding-bottom: 16px;
+}
+.pl-row {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: 48px;
+  align-items: start;
+  padding: 48px 0;
+  border-top: 1px solid var(--vp-c-divider);
+}
+.pl-section .pl-row-text h2,
+.pl-start h2 {
+  margin: 0 0 14px;
+  padding: 0;
+  border: 0;
+  font-size: 1.7rem;
+  line-height: 1.2;
+}
+.pl-row-text p,
+.pl-row-text li {
+  max-width: 36em;
+}
+.pl-row-code div[class*='language-'] {
+  margin: 0 0 12px !important;
+}
+.pl-row-code .language-txt pre code {
+  display: block;
+  width: auto;
+  white-space: pre-wrap;
+}
+.pl-caption {
+  margin: 4px 0 0 !important;
+  font-size: 14px;
+  color: var(--vp-c-text-2);
+}
+.pl-start {
+  margin-bottom: 48px;
+  padding: 40px 40px 32px;
+  border-radius: 20px;
+  background: var(--vp-c-bg-alt);
+  max-width: 1104px;
+}
+.pl-start p {
+  max-width: 44em;
+}
+
+@media (max-width: 960px) {
+  .pl-hero,
+  .pl-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+  .pl-hero {
+    padding-top: 40px;
+    padding-bottom: 56px;
+  }
+}
+@media (max-width: 640px) {
+  .pl-hero,
+  .pl-section {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .pl-start {
+    margin-left: 16px;
+    margin-right: 16px;
+    padding: 28px 20px 20px;
+  }
+}

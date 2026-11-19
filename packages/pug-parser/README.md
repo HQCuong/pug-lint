@@ -1,5 +1,22 @@
+<div align="center">
+
+<a href="https://pug-lint.dev/"><img src="https://pug-lint.dev/logo.svg" alt="" width="64" height="64"></a>
+
 # pug-lint-parser
 
+A Pug parser for linting and formatting tools.
+
+[![npm version](https://img.shields.io/npm/v/pug-lint-parser?color=2e8b62&label=npm)](https://www.npmjs.com/package/pug-lint-parser)
+[![CI](https://github.com/HQCuong/pug-lint/actions/workflows/ci.yml/badge.svg)](https://github.com/HQCuong/pug-lint/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/npm/l/pug-lint-parser?color=2e8b62)](https://github.com/HQCuong/pug-lint/blob/main/LICENSE)
+
+**[Documentation](https://pug-lint.dev/parser/)** · [Unsupported syntax](https://pug-lint.dev/guide/unsupported-syntax)
+
+</div>
+
+---
+
+<!-- #region docs -->
 A concrete syntax tree (CST) parser for Pug templates, built for linting and formatting tools.
 It is the parser behind [`eslint-plugin-pug-vue`](https://github.com/HQCuong/pug-lint/tree/main/packages/eslint-plugin).
 
@@ -58,3 +75,5 @@ without an error but differently from Pug. They are listed in
 ## License
 
 MIT
+
+<!-- #endregion docs -->
