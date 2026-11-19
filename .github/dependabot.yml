@@ -1,0 +1,32 @@
+version: 2
+updates:
+  - package-ecosystem: npm # also covers pnpm-lock.yaml and every workspace package
+    directory: /
+    schedule:
+      interval: weekly
+    ignore:
+      # Wait for typescript-eslint to support the next TypeScript major.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      # Stays on the Node major in .nvmrc, so types can't offer APIs the runtime lacks.
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
+      # Pinned exact on purpose (vitepress 1.x theme and plugin API); bump by hand.
+      - dependency-name: vitepress
+      - dependency-name: vitepress-plugin-llms
+    groups:
+      # Peer dependencies of the plugin: update together and let CI + the compat check judge.
+      eslint-and-vue-tooling:
+        patterns: [eslint, eslint9, eslint-plugin-vue, vue-eslint-parser]
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+
+  # Keeps the SHA-pinned actions in .github/workflows up to date.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]

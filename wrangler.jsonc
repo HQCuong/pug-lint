@@ -1,0 +1,16 @@
+{
+  // Cloudflare Workers config: serves the built VitePress site (docs/) as static assets.
+  // The git-connected Workers Build runs the build command
+  //   pnpm install --frozen-lockfile && pnpm docs:build
+  // then `npx wrangler deploy` reads this file and uploads the assets directory.
+  "name": "pug-lint",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./docs/.vitepress/dist",
+    // Serve the 404.html VitePress generates for unknown paths instead of a bare 404.
+    "not_found_handling": "404-page"
+  },
+  // Each pull request branch gets its own preview URL. Static assets need no preview-specific
+  // settings, so the block stays empty.
+  "previews": {}
+}
