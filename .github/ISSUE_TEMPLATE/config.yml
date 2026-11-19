@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://pug-lint.hqcuong.workers.dev
+    about: Setup, configuration, rules, known limitations and troubleshooting.
+  - name: Report a security vulnerability
+    url: https://github.com/HQCuong/pug-lint/security/advisories/new
+    about: Please report vulnerabilities privately, not as a public issue.

@@ -1,0 +1,21 @@
+name: Feature request
+description: Suggest a new rule, a rule option, or support for more Pug syntax.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The problem you hit, not just the solution you have in mind.
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example
+      description: Pug code the rule should report, and what it should look like after a fix.
+      render: vue
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Workarounds you've tried

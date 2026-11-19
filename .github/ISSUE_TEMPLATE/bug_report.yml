@@ -1,0 +1,45 @@
+name: Bug report
+description: A wrong report, a broken or missing fix, a crash or a parse error on valid Pug.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you expected, and what happened instead (the ESLint output, or the file after `--fix`).
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: The smallest `.vue` file that shows the problem.
+      render: vue
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: eslint.config.js
+      description: Your config, or the part that matters.
+      render: js
+    validations:
+      required: true
+  - type: textarea
+    id: versions
+    attributes:
+      label: Versions
+      description: Run `npm ls @pug-lint/eslint-plugin eslint eslint-plugin-vue vue-eslint-parser` and paste the output, plus your Node.js version.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where does it happen?
+      options:
+        - ESLint CLI (eslint / eslint --fix)
+        - Editor (fix on save or quick fix)
+        - Both
+    validations:
+      required: true
