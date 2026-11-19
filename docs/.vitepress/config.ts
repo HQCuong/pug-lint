@@ -81,6 +81,7 @@ export default defineConfig({
             { text: 'Getting started', link: '/guide/getting-started' },
             { text: 'Configuration', link: '/guide/configuration' },
             { text: 'Editor setup', link: '/guide/editor-setup' },
+            { text: 'Using with oxlint', link: '/guide/oxlint' },
           ],
         },
         {

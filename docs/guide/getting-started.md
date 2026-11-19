@@ -67,3 +67,4 @@ To fix on save in VS Code, see [Editor setup](./editor-setup).
 - [Rules](/rules/): what each `vue-pug/*` rule does and its options.
 - [Known limitations](./limitations) before you roll it out on a large codebase.
 - Coming from `eslint-plugin-vue-pug`? Read [the migration guide](./migration).
+- Using oxlint? Run it next to ESLint: see [Using with oxlint](./oxlint).

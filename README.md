@@ -36,7 +36,8 @@ Lint and format `<template lang="pug">` in Vue single-file components with ESLin
   would change the structure is dropped and its warning stays.
   [How it works](https://pug-lint.dev/guide/fix-guard).
 - **Works where you already lint.** `eslint` on the CLI, fix-on-save in VS Code or any editor that
-  runs ESLint. ESLint 9 and 10, flat config, `lang="pug"` and `lang="jade"`.
+  runs ESLint. ESLint 9 and 10, flat config, `lang="pug"` and `lang="jade"`. Using oxlint? Run it
+  next to ESLint: [Using with oxlint](https://pug-lint.dev/guide/oxlint).
 
 ```vue
 <!-- before: eslint --fix -->
