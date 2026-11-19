@@ -1,6 +1,6 @@
 {
   "name": "pug-lint-parser",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Concrete syntax tree parser for Pug templates",
   "license": "MIT",
   "author": "HQCuong",
