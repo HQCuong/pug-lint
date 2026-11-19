@@ -47,7 +47,7 @@ importers:
       eslint:
         specifier: ^10.15.0
         version: 10.15.0
-      eslint-plugin-pug-lint:
+      eslint-plugin-pug-vue:
         specifier: workspace:*
         version: link:../../packages/eslint-plugin
       eslint-plugin-vue:

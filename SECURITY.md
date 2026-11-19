@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Only the latest release of `eslint-plugin-pug-lint` and `pug-lint-parser` receives fixes.
+Only the latest release of `eslint-plugin-pug-vue` and `pug-lint-parser` receives fixes.
 
 ## Reporting a vulnerability
 

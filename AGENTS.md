@@ -1,10 +1,10 @@
 # pug-lint: guide for coding agents
 
-> Using `eslint-plugin-pug-lint` in an app rather than working on this repository? Read
+> Using `eslint-plugin-pug-vue` in an app rather than working on this repository? Read
 > [packages/eslint-plugin/AGENTS.md](packages/eslint-plugin/AGENTS.md) instead.
 
 This repository is a pnpm workspace with two published packages, `pug-lint-parser`
-(`packages/pug-parser`) and `eslint-plugin-pug-lint` (`packages/eslint-plugin`), plus the
+(`packages/pug-parser`) and `eslint-plugin-pug-vue` (`packages/eslint-plugin`), plus the
 VitePress site in `docs/`. [CONTRIBUTING.md](CONTRIBUTING.md) is the source of truth for setup,
 ground rules and checks; the points below are the ones agents most often get wrong.
 

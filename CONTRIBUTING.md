@@ -28,7 +28,7 @@ pnpm docs:dev    # documentation site at http://localhost:5173
 | Path | What it is |
 |---|---|
 | `packages/pug-parser` | `pug-lint-parser`: the Pug CST parser. |
-| `packages/eslint-plugin` | `eslint-plugin-pug-lint`: tokenizer for vue-eslint-parser, processor (suppression + fix guard), configs and the `vue-pug/*` rules. |
+| `packages/eslint-plugin` | `eslint-plugin-pug-vue`: tokenizer for vue-eslint-parser, processor (suppression + fix guard), configs and the `vue-pug/*` rules. |
 | `docs` | The VitePress documentation site. |
 | `examples/vue-pug` | A small Vue project for trying the plugin by hand (`docs/manual-test.md`). |
 

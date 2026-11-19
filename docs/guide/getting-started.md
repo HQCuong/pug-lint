@@ -1,6 +1,6 @@
 # Getting started
 
-`eslint-plugin-pug-lint` lints and formats `<template lang="pug">` (and `lang="jade"`) in Vue
+`eslint-plugin-pug-vue` lints and formats `<template lang="pug">` (and `lang="jade"`) in Vue
 single-file components:
 
 - Your `vue/*` rules from eslint-plugin-vue run on Pug templates, under their usual names and with
@@ -22,15 +22,15 @@ single-file components:
 ::: code-group
 
 ```sh [npm]
-npm install --save-dev eslint eslint-plugin-vue vue-eslint-parser eslint-plugin-pug-lint
+npm install --save-dev eslint eslint-plugin-vue vue-eslint-parser eslint-plugin-pug-vue
 ```
 
 ```sh [pnpm]
-pnpm add -D eslint eslint-plugin-vue vue-eslint-parser eslint-plugin-pug-lint
+pnpm add -D eslint eslint-plugin-vue vue-eslint-parser eslint-plugin-pug-vue
 ```
 
 ```sh [yarn]
-yarn add -D eslint eslint-plugin-vue vue-eslint-parser eslint-plugin-pug-lint
+yarn add -D eslint eslint-plugin-vue vue-eslint-parser eslint-plugin-pug-vue
 ```
 
 :::
@@ -40,7 +40,7 @@ yarn add -D eslint eslint-plugin-vue vue-eslint-parser eslint-plugin-pug-lint
 ```js
 // eslint.config.js
 import pluginVue from 'eslint-plugin-vue'
-import vuePug from 'eslint-plugin-pug-lint'
+import vuePug from 'eslint-plugin-pug-vue'
 
 export default [
   ...pluginVue.configs['flat/recommended'],

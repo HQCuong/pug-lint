@@ -1,6 +1,6 @@
 # Manual test guide
 
-This guide walks through trying `eslint-plugin-pug-lint` by hand before anything is published.
+This guide walks through trying `eslint-plugin-pug-vue` by hand before anything is published.
 The example project [`examples/vue-pug`](../examples/vue-pug) holds three deliberately messy Vue
 single-file components with Pug templates:
 
@@ -124,7 +124,7 @@ blocks a release.
 
 - Nothing was pushed and nothing was published. All work is local commits on the `feat/v1` branch.
 - Both packages are still `"private": true` at version `0.0.0`, under the decided names
-  `eslint-plugin-pug-lint` (`packages/eslint-plugin`) and `pug-lint-parser`
+  `eslint-plugin-pug-vue` (`packages/eslint-plugin`) and `pug-lint-parser`
   (`packages/pug-parser`).
 - Publishing needs your go-ahead: create the `pug-lint` npm org, remove `"private": true`, set the
   versions (changesets are configured), then publish.

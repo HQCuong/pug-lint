@@ -1,7 +1,7 @@
 # pug-lint-parser
 
 A concrete syntax tree (CST) parser for Pug templates, built for linting and formatting tools.
-It is the parser behind [`eslint-plugin-pug-lint`](https://github.com/HQCuong/pug-lint/tree/main/packages/eslint-plugin).
+It is the parser behind [`eslint-plugin-pug-vue`](https://github.com/HQCuong/pug-lint/tree/main/packages/eslint-plugin).
 
 - **Never throws.** Input it cannot parse becomes an entry in `errors`, and parsing continues on
   the next line.

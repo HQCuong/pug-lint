@@ -16,7 +16,7 @@ const parserDir = fileURLToPath(new URL('../../../pug-parser', import.meta.url))
 const isWindows = process.platform === 'win32'
 
 const config = `import pluginVue from 'eslint-plugin-vue'
-import vuePug from 'eslint-plugin-pug-lint'
+import vuePug from 'eslint-plugin-pug-vue'
 
 export default [...pluginVue.configs['flat/recommended'], ...vuePug.configs.recommended]
 `
@@ -72,7 +72,7 @@ beforeAll(() => {
   for (const dir of [parserDir, pluginDir]) mustRun('pnpm', ['pack', '--pack-destination', packDir], dir)
   const tarballs = readdirSync(packDir)
   parserTarball = join(packDir, tarballs.find((f) => f.startsWith('pug-lint-parser-'))!)
-  pluginTarball = join(packDir, tarballs.find((f) => f.startsWith('eslint-plugin-pug-lint-'))!)
+  pluginTarball = join(packDir, tarballs.find((f) => f.startsWith('eslint-plugin-pug-vue-'))!)
 }, scaled(60_000))
 
 afterAll(() => {
@@ -90,7 +90,7 @@ describe('packed packages', () => {
         'eslint-plugin-vue': '^10.0.0',
         'vue-eslint-parser': '^10.0.0',
         'pug-lint-parser': `file:${parserTarball}`,
-        'eslint-plugin-pug-lint': `file:${pluginTarball}`,
+        'eslint-plugin-pug-vue': `file:${pluginTarball}`,
       }
       writeFileSync(join(project, 'package.json'), JSON.stringify({ name: 'packed-test', private: true, type: 'module', devDependencies }))
       writeFileSync(join(project, 'eslint.config.js'), config)

@@ -1,10 +1,10 @@
-# eslint-plugin-pug-lint: guide for coding agents
+# eslint-plugin-pug-vue: guide for coding agents
 
 > Working on the pug-lint repository itself? Read
 > [CONTRIBUTING.md](https://github.com/HQCuong/pug-lint/blob/main/CONTRIBUTING.md) instead.
 
 This file is for an AI agent setting up or fixing lint problems in a Vue project that uses
-`eslint-plugin-pug-lint`. It ships in the npm package, so it matches the installed version. Full
+`eslint-plugin-pug-vue`. It ships in the npm package, so it matches the installed version. Full
 docs: <https://pug-lint.dev>, also as Markdown for agents:
 [`/llms.txt`](https://pug-lint.dev/llms.txt) (index) and
 [`/llms-full.txt`](https://pug-lint.dev/llms-full.txt) (every page in one file).
@@ -24,7 +24,7 @@ Requires ESLint `^9.15.0 || ^10.0.0` with a flat config, `eslint-plugin-vue` `^1
 ```js
 // eslint.config.js
 import pluginVue from 'eslint-plugin-vue'
-import vuePug from 'eslint-plugin-pug-lint'
+import vuePug from 'eslint-plugin-pug-vue'
 
 export default [
   ...pluginVue.configs['flat/recommended'],

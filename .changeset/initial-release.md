@@ -1,5 +1,5 @@
 ---
-'eslint-plugin-pug-lint': minor
+'eslint-plugin-pug-vue': minor
 'pug-lint-parser': minor
 ---
 

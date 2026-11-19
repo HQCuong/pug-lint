@@ -2,13 +2,13 @@
   "name": "vue-pug-example",
   "version": "0.0.0",
   "private": true,
-  "description": "Deliberately messy Vue SFCs with Pug templates, for trying eslint-plugin-pug-lint by hand",
+  "description": "Deliberately messy Vue SFCs with Pug templates, for trying eslint-plugin-pug-vue by hand",
   "type": "module",
   "scripts": {
     "lint:demo": "eslint ."
   },
   "devDependencies": {
-    "eslint-plugin-pug-lint": "workspace:*",
+    "eslint-plugin-pug-vue": "workspace:*",
     "eslint": "^10.15.0",
     "eslint-plugin-vue": "^10.12.1",
     "vue-eslint-parser": "^10.4.2"
