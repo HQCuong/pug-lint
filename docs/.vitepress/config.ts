@@ -62,6 +62,14 @@ export default defineConfig({
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
     ['meta', { name: 'twitter:image', content: `${SITE_URL}/og.png` }],
   ],
+  markdown: {
+    // Inline code is HTML that Vue compiles, so `{{ x }}` in it would be read as an interpolation
+    // (fenced code blocks already get v-pre). Pug templates in Vue are full of `{{ }}`.
+    config(md) {
+      const render = md.renderer.rules.code_inline!
+      md.renderer.rules.code_inline = (...args) => render(...args).replace(/^<code/, '<code v-pre')
+    },
+  },
   vite: {
     plugins: [llmstxt()],
   },
@@ -87,6 +95,7 @@ export default defineConfig({
         {
           text: 'How it works',
           items: [
+            { text: 'Overview', link: '/guide/how-it-works' },
             { text: 'The fix guard', link: '/guide/fix-guard' },
             { text: 'vue/* rules on Pug', link: '/guide/vue-rules' },
             { text: 'Compatibility table', link: '/guide/vue-compatibility' },
@@ -99,6 +108,19 @@ export default defineConfig({
             { text: 'Unsupported Pug syntax', link: '/guide/unsupported-syntax' },
             { text: 'Troubleshooting', link: '/guide/troubleshooting' },
             { text: 'Migrating from eslint-plugin-vue-pug', link: '/guide/migration' },
+          ],
+        },
+      ],
+      '/parser/': [
+        {
+          text: 'pug-lint-parser',
+          items: [
+            { text: 'Overview', link: '/parser/' },
+            { text: 'API', link: '/parser/api' },
+            { text: 'Syntax tree', link: '/parser/syntax-tree' },
+            { text: 'Errors', link: '/parser/errors' },
+            { text: 'Recipes', link: '/parser/recipes' },
+            { text: 'Unsupported syntax', link: '/guide/unsupported-syntax' },
           ],
         },
       ],

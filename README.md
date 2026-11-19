@@ -80,6 +80,36 @@ export default [
 Then run `npx eslint . --fix`, or
 [set up fix-on-save](https://pug-lint.dev/guide/editor-setup) in your editor.
 
+## How it works
+
+```mermaid
+flowchart TD
+  A["A .vue file with a Pug template"] --> B
+  subgraph B ["vue-eslint-parser"]
+    T["Pug tokenizer<br/>(eslint-plugin-pug-vue)"] -->|uses| P["pug-lint-parser<br/>Pug to syntax tree"]
+  end
+  B -->|Vue template AST| V["vue/* rules<br/>(eslint-plugin-vue)"]
+  B -->|Pug syntax tree| R["vue-pug/* rules<br/>(eslint-plugin-pug-vue)"]
+  V --> S1
+  R --> S1
+  subgraph C ["Plugin processor"]
+    S1["Suppress vue/* messages<br/>that misreport on Pug"] --> S2["Fix guard: apply the fix to a copy,<br/>parse it again, compare the structure"]
+  end
+  S2 -->|same structure| OK["Fix applied"]
+  S2 -->|structure changed| NO["Fix dropped, warning kept"]
+```
+
+1. **Parse.** vue-eslint-parser hands each `<template lang="pug">` to the plugin's tokenizer,
+   which parses it with `pug-lint-parser` and returns the tokens Vue expects from HTML, at the
+   exact positions of your Pug.
+2. **Lint.** `vue/*` rules read the Vue template AST as on an HTML template; `vue-pug/*` rules
+   read the Pug syntax tree, which keeps the indentation, quotes and commas they format.
+3. **Check.** Before ESLint writes anything, the processor drops the few `vue/*` messages that
+   misreport on Pug, and the fix guard rejects every fix that would change the template's
+   structure.
+
+More in [How it works](https://pug-lint.dev/guide/how-it-works).
+
 ## Packages
 
 | Package | Version | What it is |

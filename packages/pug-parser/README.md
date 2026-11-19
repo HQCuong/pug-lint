@@ -48,6 +48,10 @@ walk(doc, (node) => {
 
 ## API
 
+The full reference, with every node type, is on the site: [API](https://pug-lint.dev/parser/api),
+[syntax tree](https://pug-lint.dev/parser/syntax-tree), [errors](https://pug-lint.dev/parser/errors) and
+[recipes](https://pug-lint.dev/parser/recipes).
+
 - `parsePug(text, options?)` → `PugDocument`. `options.start` / `options.end` limit parsing to
   that range of `text`.
 - `walk(doc, visit)`: calls `visit(node, parent)` for every node in document order, including the
