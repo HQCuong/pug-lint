@@ -2,3 +2,5 @@ node_modules
 dist
 .eslintcache
 examples/.tmp-vue-pug
+docs/.vitepress/dist
+docs/.vitepress/cache

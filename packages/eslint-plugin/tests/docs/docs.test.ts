@@ -1,11 +1,12 @@
-// Rule docs and README: every rule has a doc whose examples lint as they claim, and the README's
-// generated sections (rules table, vue rule lists) are current and use `vue-pug/*` rule ids.
+// Rule docs, README and docs site: every rule has a doc whose examples lint as they claim and a site
+// page that includes it, and the generated sections (rules tables, vue rule lists) are current and
+// use `vue-pug/*` rule ids.
 import { existsSync, readFileSync } from 'node:fs'
 import type { Linter } from 'eslint'
 import { describe, expect, it } from 'vitest'
 import plugin from '../../src/index.ts'
 import { getPugTemplates } from '../../src/shared/templates.ts'
-import { updateReadme } from '../../tools/docs/rules-table.ts'
+import { repoRoot, targets, updateTarget } from '../../tools/docs/rules-table.ts'
 import { eslintVersions } from '../helpers/eslint-versions.ts'
 import { lintText } from '../helpers/lint.ts'
 
@@ -98,12 +99,27 @@ describe('rule docs', () => {
   }
 })
 
+describe('generated sections', () => {
+  it.each(targets.map((t) => [t.path, t] as const))('%s is current', (_, target) => {
+    const text = readFileSync(new URL(target.path, repoRoot), 'utf8')
+    expect(updateTarget(target, text)).toBe(text)
+  })
+})
+
+describe('docs site', () => {
+  it.each(ruleNames)('docs/rules/%s.md includes the rule doc', (name) => {
+    const page = readFileSync(new URL(`docs/rules/${name}.md`, repoRoot), 'utf8')
+    expect(page).toContain(`<!--@include: ../../packages/eslint-plugin/docs/rules/${name}.md-->`)
+  })
+
+  it('links every rule from the rules page', () => {
+    const page = readFileSync(new URL('docs/rules/index.md', repoRoot), 'utf8')
+    for (const name of ruleNames) expect(page).toContain(`[\`vue-pug/${name}\`](/rules/${name})`)
+  })
+})
+
 describe('README', () => {
   const readme = read('README.md')
-
-  it('has current generated sections', () => {
-    expect(updateReadme(readme)).toBe(readme)
-  })
 
   it('lists every rule as vue-pug/<name>, with no @pug-lint/ rule ids', () => {
     for (const name of ruleNames) expect(readme).toContain(`[\`vue-pug/${name}\`]`)

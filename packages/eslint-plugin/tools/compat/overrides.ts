@@ -28,7 +28,7 @@ export const overrides: Record<string, Override> = {
   // a way the rule rightly sees; on Pug the rule reports what it should.
   'vue/block-lang': {
     status: 'forced-keep',
-    reason: 'reports the lang attribute of the <template> block itself, outside the Pug template; the twin has no lang',
+    reason: 'reports the lang attribute of the `<template>` block itself, outside the Pug template; the twin has no lang',
   },
   'vue/max-len': {
     status: 'forced-keep',
@@ -66,7 +66,7 @@ export const overrides: Record<string, Override> = {
   },
   'vue/no-empty-component-block': {
     status: 'forced-keep',
-    reason: 'reports an empty <template> block at its tag, outside the Pug template; removing the block changes the template count, so the guard drops that fix',
+    reason: 'reports an empty `<template>` block at its tag, outside the Pug template; removing the block changes the template count, so the guard drops that fix',
   },
   'vue/html-quotes': {
     status: 'forced-suppress',

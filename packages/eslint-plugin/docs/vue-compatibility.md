@@ -23,7 +23,7 @@ ok: 178 · untested: 37 · crash: 4 · mismatch: 3 · fix-unsafe: 11 · fix-ugly
 | `vue/arrow-spacing` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/attribute-hyphenation` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/attributes-order` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/block-lang` | forced-keep | reports the lang attribute of the <template> block itself, outside the Pug template; the twin has no lang (measured: mismatch: AttrOrder.vue: more on Pug (unexpected ×1)) |  |
+| `vue/block-lang` | forced-keep | reports the lang attribute of the `<template>` block itself, outside the Pug template; the twin has no lang (measured: mismatch: AttrOrder.vue: more on Pug (unexpected ×1)) |  |
 | `vue/block-order` | untested | no report on any fixture or option set |  |
 | `vue/block-spacing` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/block-tag-newline` | untested | no report on any fixture or option set |  |
@@ -111,7 +111,7 @@ ok: 178 · untested: 37 · crash: 4 · mismatch: 3 · fix-unsafe: 11 · fix-ugly
 | `vue/no-duplicate-attr-inheritance` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-duplicate-attributes` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-duplicate-class-names` | ok | same reports as the HTML twin; fixes clean |  |
-| `vue/no-empty-component-block` | forced-keep | reports an empty <template> block at its tag, outside the Pug template; removing the block changes the template count, so the guard drops that fix (measured: fix-unsafe: EmptyRoot.vue: the guard dropped 1 fix(es) or suggestion(s)) |  |
+| `vue/no-empty-component-block` | forced-keep | reports an empty `<template>` block at its tag, outside the Pug template; removing the block changes the template count, so the guard drops that fix (measured: fix-unsafe: EmptyRoot.vue: the guard dropped 1 fix(es) or suggestion(s)) |  |
 | `vue/no-empty-pattern` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-export-in-script-setup` | ok | same reports as the HTML twin; fixes clean |  |
 | `vue/no-expose-after-await` | untested | no report on any fixture or option set |  |

@@ -2,12 +2,34 @@
 
 ESLint linting and formatting for `<template lang="pug">` in Vue single-file components.
 
-| Package | Description |
-|---|---|
-| [`@pug-lint/eslint-plugin`](packages/eslint-plugin) | The ESLint plugin: runs your `vue/*` rules on Pug templates, adds `vue-pug/*` formatting rules, and guards every fix so it cannot break a template. Start here. |
-| [`@pug-lint/parser`](packages/pug-parser) | The Pug parser behind it: a concrete syntax tree with exact source ranges that never throws. |
+- Your `vue/*` rules from eslint-plugin-vue run on Pug templates.
+- `vue-pug/*` rules format the Pug with `eslint --fix`: indentation, attribute layout, quotes,
+  commas, shorthands. No Prettier needed.
+- Every fix is checked before it is applied, so `--fix` and fix-on-save never break a template.
 
-Quick start:
+**Documentation: <https://pug-lint.hqcuong.workers.dev>**
+
+```vue
+<!-- before: eslint --fix -->
+<template lang="pug">
+div.card( class="shadow" , :title = "title" )
+    h2( v-if='title' ) {{ title }}
+    input(v-model="name" , type='text' disabled)/
+</template>
+
+<!-- after -->
+<template lang="pug">
+.card.shadow(:title="title")
+  h2(v-if="title") {{ title }}
+  input(v-model="name" type="text" disabled)
+</template>
+```
+
+## Quick start
+
+```sh
+npm install --save-dev eslint eslint-plugin-vue vue-eslint-parser @pug-lint/eslint-plugin
+```
 
 ```js
 // eslint.config.js
@@ -20,28 +42,21 @@ export default [
 ]
 ```
 
-See the [plugin README](packages/eslint-plugin/README.md) for setup, rules, editor integration
-and known limitations.
+Then run `npx eslint . --fix`, or [set up fix-on-save](https://pug-lint.hqcuong.workers.dev/guide/editor-setup)
+in your editor.
 
-## Development
+## Packages
 
-This is a pnpm workspace (Node.js `^20.19.0 || ^22.13.0 || >=24`).
+| Package | Description |
+|---|---|
+| [`@pug-lint/eslint-plugin`](packages/eslint-plugin) | The ESLint plugin: runs your `vue/*` rules on Pug templates, adds `vue-pug/*` formatting rules, and guards every fix. Start here. |
+| [`@pug-lint/parser`](packages/pug-parser) | The Pug parser behind it: a concrete syntax tree with exact source ranges that never throws. |
 
-```sh
-pnpm install
-pnpm build       # build both packages
-pnpm test        # run the test suites (ESLint 9 and 10)
-pnpm lint
-pnpm typecheck
-```
+## Contributing
 
-In `packages/eslint-plugin`:
-
-- `pnpm run compat` regenerates the `vue/*` rule compatibility table
-  ([docs/vue-compatibility.md](packages/eslint-plugin/docs/vue-compatibility.md)); `pnpm run compat:check`
-  fails when it is stale.
-- `pnpm run docs:gen` regenerates the rule sections of the plugin README; `pnpm run docs:check` fails when they
-  are stale.
+Bug reports, docs fixes and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for
+setup and the checks to run, and follow the [Code of Conduct](CODE_OF_CONDUCT.md). Security issues:
+see [SECURITY.md](SECURITY.md).
 
 ## License
 
