@@ -81,57 +81,57 @@ export default defineConfig({
       { text: 'Parser', link: '/parser/', activeMatch: '/parser/' },
       { text: 'Releases', link: `${REPO}/releases` },
     ],
-    sidebar: {
-      '/guide/': [
-        {
-          text: 'Introduction',
-          items: [
-            { text: 'Getting started', link: '/guide/getting-started' },
-            { text: 'Configuration', link: '/guide/configuration' },
-            { text: 'Editor setup', link: '/guide/editor-setup' },
-            { text: 'Using with oxlint', link: '/guide/oxlint' },
-          ],
-        },
-        {
-          text: 'How it works',
-          items: [
-            { text: 'Overview', link: '/guide/how-it-works' },
-            { text: 'The fix guard', link: '/guide/fix-guard' },
-            { text: 'vue/* rules on Pug', link: '/guide/vue-rules' },
-            { text: 'Compatibility table', link: '/guide/vue-compatibility' },
-          ],
-        },
-        {
-          text: 'Reference',
-          items: [
-            { text: 'Known limitations', link: '/guide/limitations' },
-            { text: 'Unsupported Pug syntax', link: '/guide/unsupported-syntax' },
-            { text: 'Troubleshooting', link: '/guide/troubleshooting' },
-            { text: 'Migrating from eslint-plugin-vue-pug', link: '/guide/migration' },
-          ],
-        },
-      ],
-      '/parser/': [
-        {
-          text: 'pug-lint-parser',
-          items: [
-            { text: 'Overview', link: '/parser/' },
-            { text: 'API', link: '/parser/api' },
-            { text: 'Syntax tree', link: '/parser/syntax-tree' },
-            { text: 'Errors', link: '/parser/errors' },
-            { text: 'Recipes', link: '/parser/recipes' },
-            { text: 'Unsupported syntax', link: '/guide/unsupported-syntax' },
-          ],
-        },
-      ],
-      '/rules/': [
-        { text: 'Rules', items: [{ text: 'Overview', link: '/rules/' }] },
-        ...RULE_GROUPS.map(([text, names]) => ({
-          text,
-          items: names.map((name) => ({ text: name, link: `/rules/${name}` })),
-        })),
-      ],
-    },
+    // One sidebar for the whole site, so the guide, the rules and the parser are always one click away.
+    sidebar: [
+      {
+        text: 'Introduction',
+        items: [
+          { text: 'Getting started', link: '/guide/getting-started' },
+          { text: 'Configuration', link: '/guide/configuration' },
+          { text: 'Editor setup', link: '/guide/editor-setup' },
+          { text: 'Using with oxlint', link: '/guide/oxlint' },
+        ],
+      },
+      {
+        text: 'How it works',
+        items: [
+          { text: 'Overview', link: '/guide/how-it-works' },
+          { text: 'The fix guard', link: '/guide/fix-guard' },
+          { text: 'vue/* rules on Pug', link: '/guide/vue-rules' },
+          { text: 'Compatibility table', link: '/guide/vue-compatibility' },
+        ],
+      },
+      {
+        text: 'Rules',
+        items: [
+          { text: 'Overview', link: '/rules/' },
+          ...RULE_GROUPS.map(([text, names]) => ({
+            text,
+            collapsed: true,
+            items: names.map((name) => ({ text: name, link: `/rules/${name}` })),
+          })),
+        ],
+      },
+      {
+        text: 'Parser',
+        items: [
+          { text: 'pug-lint-parser', link: '/parser/' },
+          { text: 'API', link: '/parser/api' },
+          { text: 'Syntax tree', link: '/parser/syntax-tree' },
+          { text: 'Errors', link: '/parser/errors' },
+          { text: 'Recipes', link: '/parser/recipes' },
+        ],
+      },
+      {
+        text: 'Reference',
+        items: [
+          { text: 'Known limitations', link: '/guide/limitations' },
+          { text: 'Unsupported Pug syntax', link: '/guide/unsupported-syntax' },
+          { text: 'Troubleshooting', link: '/guide/troubleshooting' },
+          { text: 'Migrating from eslint-plugin-vue-pug', link: '/guide/migration' },
+        ],
+      },
+    ],
     socialLinks: [{ icon: 'github', link: REPO }],
     editLink: {
       // Serialized to the client: it cannot use constants from this module.
