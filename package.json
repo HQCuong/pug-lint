@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "typecheck": "pnpm -r --filter \"./packages/*\" typecheck",
     "prepare": "simple-git-hooks",
-    "check": "pnpm lint && pnpm typecheck",
+    "check": "eslint . && tsc -p packages/pug-parser --noEmit && tsc -p packages/eslint-plugin --noEmit",
     "changeset": "changeset",
     "docs:dev": "pnpm -C docs dev",
     "docs:build": "pnpm -C docs build",
