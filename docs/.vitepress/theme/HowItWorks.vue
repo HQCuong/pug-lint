@@ -1,16 +1,22 @@
 <script setup lang="ts">
 // The "how it works" diagram: what happens to a .vue file with a Pug template, from parsing to the
 // fix guard. Plain HTML and CSS, so it follows the site's light and dark colors and reflows on a
-// phone. Each box names the package that does the work.
+// phone. Each box names the package that does the work. Strings come from the locale's theme.json.
+import { useData } from 'vitepress'
+import { computed } from 'vue'
+import type { ThemeConfig } from '../config'
+
+const { theme } = useData<ThemeConfig>()
+const t = computed(() => theme.value.strings.howItWorks)
 </script>
 
 <template>
-  <figure class="HowItWorks" aria-label="How eslint-plugin-pug-vue lints a Pug template">
+  <figure class="HowItWorks" :aria-label="t.label">
     <ol class="flow">
       <li class="step">
         <div class="box file">
-          <span class="who">your code</span>
-          <strong>A <code>.vue</code> file</strong>
+          <span class="who">{{ t.yourCode }}</span>
+          <strong>{{ t.file }}</strong>
           <code class="snippet">&lt;template lang="pug"&gt;</code>
         </div>
       </li>
@@ -18,21 +24,21 @@
       <li class="step">
         <div class="box panel">
           <span class="who">vue-eslint-parser</span>
-          <strong>Parse the file</strong>
+          <strong>{{ t.parseTitle }}</strong>
           <div class="inner">
             <div class="box sub accent">
               <span class="who">eslint-plugin-pug-vue</span>
-              <strong>Pug tokenizer</strong>
-              <span>turns the Pug into the tokens Vue expects from HTML</span>
+              <strong>{{ t.tokenizerTitle }}</strong>
+              <span>{{ t.tokenizerText }}</span>
             </div>
-            <div class="uses">uses</div>
+            <div class="uses">{{ t.uses }}</div>
             <div class="box sub core">
               <span class="who">pug-lint-parser</span>
-              <strong>Pug → syntax tree</strong>
-              <span>exact positions, never throws</span>
+              <strong>{{ t.parserTitle }}</strong>
+              <span>{{ t.parserText }}</span>
             </div>
           </div>
-          <span class="out">gives a Vue template AST, plus the Pug tree</span>
+          <span class="out">{{ t.parseOut }}</span>
         </div>
       </li>
 
@@ -41,29 +47,29 @@
           <div class="box">
             <span class="who">eslint-plugin-vue</span>
             <strong><code>vue/*</code> rules</strong>
-            <span>read the Vue AST, as on an HTML template</span>
+            <span>{{ t.vueRulesText }}</span>
           </div>
           <div class="box accent">
             <span class="who">eslint-plugin-pug-vue</span>
             <strong><code>vue-pug/*</code> rules</strong>
-            <span>read the Pug tree: indentation, attributes, quotes…</span>
+            <span>{{ t.pugRulesText }}</span>
           </div>
         </div>
-        <span class="out">problems, each maybe with a fix</span>
+        <span class="out">{{ t.lintOut }}</span>
       </li>
 
       <li class="step">
         <div class="box panel">
-          <span class="who">eslint-plugin-pug-vue processor</span>
-          <strong>Check before ESLint writes anything</strong>
+          <span class="who">{{ t.processor }}</span>
+          <strong>{{ t.checkTitle }}</strong>
           <div class="inner two">
             <div class="box sub">
-              <strong>Suppress</strong>
-              <span>drops <code>vue/*</code> messages that misreport on Pug, only inside Pug templates</span>
+              <strong>{{ t.suppressTitle }}</strong>
+              <span>{{ t.suppressText }}</span>
             </div>
             <div class="box sub core">
-              <strong>Fix guard</strong>
-              <span>applies each fix to a copy, parses it again with pug-lint-parser and compares the structure</span>
+              <strong>{{ t.guardTitle }}</strong>
+              <span>{{ t.guardText }}</span>
             </div>
           </div>
         </div>
@@ -72,12 +78,12 @@
       <li class="step">
         <div class="split">
           <div class="box result ok">
-            <strong>Same structure</strong>
-            <span>the fix is applied by <code>eslint --fix</code> or fix-on-save</span>
+            <strong>{{ t.sameTitle }}</strong>
+            <span>{{ t.sameText }}</span>
           </div>
           <div class="box result warn">
-            <strong>Structure changed</strong>
-            <span>the fix is dropped; the warning stays for you to fix by hand</span>
+            <strong>{{ t.changedTitle }}</strong>
+            <span>{{ t.changedText }}</span>
           </div>
         </div>
       </li>

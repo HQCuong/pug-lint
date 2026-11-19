@@ -1,3 +1,7 @@
+---
+description: "The pug-lint-parser concrete syntax tree: every node type, attributes and their values, text parts, and the per-line information formatters need."
+---
+
 # Syntax tree
 
 `parsePug` returns a **concrete** syntax tree: besides what a template means, it keeps how it is

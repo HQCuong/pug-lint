@@ -84,4 +84,6 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Every translation has every page, the English code blocks and anchors, and in-language links.
+      - run: node docs/scripts/check-locales.mjs
       - run: pnpm docs:build

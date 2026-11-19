@@ -1,3 +1,7 @@
+---
+description: "Small programs built on pug-lint-parser: list classes, a safe codemod checked with fingerprint, checking the template of a .vue file, finding nodes."
+---
+
 # Recipes
 
 Small programs built on `pug-lint-parser`. Each one runs as is with `npm install pug-lint-parser`

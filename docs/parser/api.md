@@ -1,3 +1,7 @@
+---
+description: "API reference for pug-lint-parser: parsePug and its options, walk, fingerprint, literalSpans and the exported types."
+---
+
 # API
 
 ```js

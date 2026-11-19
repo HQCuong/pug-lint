@@ -1,3 +1,7 @@
+---
+description: "Fix common problems with eslint-plugin-pug-vue: crashing vue/* rules, fixes that are not applied, nothing reported in Pug templates."
+---
+
 # Troubleshooting
 
 ## `TypeError: Cannot read properties of null (reading 'type')` (or `'range'`)

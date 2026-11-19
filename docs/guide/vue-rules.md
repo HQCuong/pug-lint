@@ -1,3 +1,7 @@
+---
+description: "Which eslint-plugin-vue rules run on Pug templates, which are turned off because they crash, and which are silenced inside Pug templates only."
+---
+
 # `vue/*` rules on Pug
 
 Most eslint-plugin-vue rules work on Pug templates as they do on HTML. The rest are measured by a

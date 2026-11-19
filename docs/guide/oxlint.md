@@ -1,3 +1,7 @@
+---
+description: "Use eslint-plugin-pug-vue in a project that uses oxlint: oxlint for scripts, ESLint for Vue templates, with eslint-plugin-oxlint to avoid duplicate reports."
+---
+
 # Using with oxlint
 
 [Oxlint](https://oxc.rs/docs/guide/usage/linter) is a much faster linter written in Rust. In a

@@ -1,3 +1,7 @@
+---
+description: "How eslint-plugin-pug-vue lints Pug in Vue: a Pug tokenizer for vue-eslint-parser, vue/* and vue-pug/* rules, and a fix guard that checks every fix."
+---
+
 # How it works
 
 ESLint cannot read Pug on its own, and eslint-plugin-vue only knows HTML templates. The plugin

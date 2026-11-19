@@ -3,7 +3,13 @@
 // `eslint` with `configs.recommended` on this file, and the fixed lines are what `eslint --fix`
 // writes. Spaces are drawn as dots, like an editor's "render whitespace", because in Pug
 // whitespace is structure. "Run eslint --fix" replaces the lines one by one.
+import { useData } from 'vitepress'
 import { computed, onBeforeUnmount, ref } from 'vue'
+import type { ThemeConfig } from '../../config'
+
+const { theme } = useData<ThemeConfig>()
+const t = computed(() => theme.value.strings.demo)
+const fill = (text: string, count: number) => text.replace('{count}', String(count))
 
 interface Problem {
   line: number // 1-based, as ESLint reports it
@@ -147,11 +153,11 @@ onBeforeUnmount(() => timers.forEach(clearTimeout))
 </script>
 
 <template>
-  <figure class="FixDemo" aria-label="Example: eslint --fix on a Pug template">
+  <figure class="FixDemo" :aria-label="t.label">
     <div class="bar">
       <span class="file">UserCard.vue</span>
       <button type="button" class="run" :disabled="running" @click="run">
-        {{ done ? 'Reset the example' : 'Run eslint --fix' }}
+        {{ done ? t.reset : t.run }}
       </button>
     </div>
 
@@ -164,16 +170,16 @@ onBeforeUnmount(() => timers.forEach(clearTimeout))
 
     <figcaption class="status" aria-live="polite">
       <template v-if="done">
-        <span class="ok">No problems.</span> 15 fixed by <code>eslint --fix</code>, and the template renders the same.
+        <span class="ok">{{ t.done }}</span> {{ fill(t.doneDetail, PROBLEMS.length) }}
       </template>
       <template v-else>
-        <span class="warn">{{ remaining.length }} problems</span>
-        <span class="hint">Hover a squiggle to read the warning.</span>
+        <span class="warn">{{ fill(t.problems, remaining.length) }}</span>
+        <span class="hint">{{ t.hint }}</span>
       </template>
     </figcaption>
 
     <details class="list">
-      <summary>All {{ PROBLEMS.length }} warnings from <code>eslint</code></summary>
+      <summary>{{ fill(t.allWarnings, PROBLEMS.length) }}</summary>
       <ul>
         <li v-for="p in PROBLEMS" :key="`${p.line}:${p.col}`">
           <span class="pos">{{ p.line }}:{{ p.col }}</span> {{ p.message }} <span class="rule">vue-pug/{{ p.rule }}</span>

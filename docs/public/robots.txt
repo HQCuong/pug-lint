@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Docs as Markdown for LLMs and coding agents (https://llmstxt.org): https://pug-lint.dev/llms.txt
+# Every page in one file: https://pug-lint.dev/llms-full.txt
+# Every page also has a Markdown copy at its URL + .md, e.g. https://pug-lint.dev/guide/getting-started.md
+
+Sitemap: https://pug-lint.dev/sitemap.xml

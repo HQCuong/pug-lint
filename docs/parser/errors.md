@@ -1,3 +1,7 @@
+---
+description: "pug-lint-parser error codes with examples, how the parser recovers after an error, and how to turn an offset into a line and column."
+---
+
 # Errors
 
 `parsePug` never throws. What it cannot parse becomes an entry in `doc.errors`, and the rest of

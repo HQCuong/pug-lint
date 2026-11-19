@@ -10,7 +10,7 @@
 //   node tools/docs/rules-table.ts --check   exit 1 when one is stale
 //
 // Needs the parser's `dist` (the `docs:*` scripts build first).
-import { readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import type { Rule } from 'eslint'
 import { vueCompat, vueCrashing, vueSuppressed } from '../../src/configs/generated/vue-compat.ts'
@@ -83,15 +83,35 @@ export interface Target {
   sections: Section[]
 }
 
-export const targets: Target[] = [
-  { path: 'packages/eslint-plugin/README.md', sections: [[RULES, () => renderRulesTable()]] },
-  { path: 'docs/rules/index.md', sections: [[RULES, () => renderRulesTable(plugin.rules, (name) => `/rules/${name}`)]] },
-  { path: 'docs/guide/vue-rules.md', sections: [[VUE_RULES, renderVueRuleLists]] },
-  { path: 'docs/guide/troubleshooting.md', sections: [[CRASHING, () => ruleList(Object.keys(vueCrashing))]] },
-  { path: 'packages/eslint-plugin/AGENTS.md', sections: [[CRASHING, () => ruleList(Object.keys(vueCrashing))]] },
+export const repoRoot = new URL('../../../../', import.meta.url)
+
+/**
+ * The site's languages: '' for English, else the code of each `docs/<code>/` translation. The
+ * generated lists stay in English in every language; only the rule links point to the
+ * translated rule pages.
+ */
+const siteLocales: string[] = [
+  '',
+  ...readdirSync(new URL('docs/', repoRoot), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && /^[a-z]{2}$/.test(entry.name))
+    .filter((entry) => existsSync(new URL(`docs/${entry.name}/rules/index.md`, repoRoot)))
+    .map((entry) => entry.name)
+    .sort(),
 ]
 
-export const repoRoot = new URL('../../../../', import.meta.url)
+export const targets: Target[] = [
+  { path: 'packages/eslint-plugin/README.md', sections: [[RULES, () => renderRulesTable()]] },
+  { path: 'packages/eslint-plugin/AGENTS.md', sections: [[CRASHING, () => ruleList(Object.keys(vueCrashing))]] },
+  ...siteLocales.flatMap((code): Target[] => {
+    const dir = code === '' ? 'docs' : `docs/${code}`
+    const prefix = code === '' ? '' : `/${code}`
+    return [
+      { path: `${dir}/rules/index.md`, sections: [[RULES, () => renderRulesTable(plugin.rules, (name) => `${prefix}/rules/${name}`)]] },
+      { path: `${dir}/guide/vue-rules.md`, sections: [[VUE_RULES, renderVueRuleLists]] },
+      { path: `${dir}/guide/troubleshooting.md`, sections: [[CRASHING, () => ruleList(Object.keys(vueCrashing))]] },
+    ]
+  }),
+]
 
 /** `text` (the content of `target`) with every generated section brought up to date. */
 export function updateTarget(target: Target, text: string): string {

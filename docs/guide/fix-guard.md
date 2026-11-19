@@ -1,3 +1,7 @@
+---
+description: "How the fix guard keeps eslint --fix from breaking Pug templates: every fix is parsed again and its structure compared before ESLint applies it."
+---
+
 # The fix guard
 
 An autofix that breaks a template is worse than no autofix. Pug makes that easy: indentation is

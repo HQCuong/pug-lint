@@ -1,3 +1,7 @@
+---
+description: "Lint and fix Pug templates on save in VS Code, WebStorm and Neovim with the ESLint integration, without a second formatter."
+---
+
 # Editor setup
 
 The plugin needs no editor extension of its own: any editor integration that runs ESLint picks it

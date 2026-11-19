@@ -1,3 +1,7 @@
+---
+description: "Known limitations of eslint-plugin-pug-vue: multi-line attribute values, shorthands, AST differences from HTML templates, and the fix guard cost."
+---
+
 # Known limitations
 
 - **Multi-line attribute values need backticks.** A line break inside a `'…'` or `"…"` value is a

@@ -1,3 +1,7 @@
+---
+description: "Move from eslint-plugin-vue-pug to eslint-plugin-pug-vue: uninstall, flat config, and the rules that changed."
+---
+
 # Migrating from eslint-plugin-vue-pug
 
 `eslint-plugin-vue-pug` registers itself under the same `vue-pug` key, so the two plugins cannot be

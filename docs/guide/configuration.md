@@ -1,3 +1,7 @@
+---
+description: "Configure eslint-plugin-pug-vue: the base and recommended configs, templates indented under <template>, keeping a suppressed vue/* rule, and the plugin key."
+---
+
 # Configuration
 
 ## The two configs

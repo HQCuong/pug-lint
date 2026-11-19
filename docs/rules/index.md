@@ -1,3 +1,7 @@
+---
+description: "All vue-pug/* rules of eslint-plugin-pug-vue: indentation, attribute blocks, quotes, commas, shorthands and Pug compile-time constructs."
+---
+
 # Rules
 
 The `vue-pug/*` rules format and check the Pug inside `<template lang="pug">`. Your `vue/*` rules

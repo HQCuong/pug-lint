@@ -1,3 +1,7 @@
+---
+description: "Install eslint-plugin-pug-vue and lint Pug templates in Vue single-file components with ESLint: requirements, install, flat config and the first eslint --fix."
+---
+
 # Getting started
 
 `eslint-plugin-pug-vue` lints and formats `<template lang="pug">` (and `lang="jade"`) in Vue

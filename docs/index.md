@@ -8,10 +8,6 @@ description: Lint and format Pug templates in Vue single-file components with ES
 markdownStyles: false
 ---
 
-<script setup>
-import FixDemo from './.vitepress/theme/home/FixDemo.vue'
-</script>
-
 <section class="pl-hero">
 <div class="pl-hero-text">
 <h1 class="home-heading">ESLint for Pug templates in Vue</h1>
