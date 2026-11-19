@@ -157,7 +157,7 @@ for (const code of codes) {
     compareBlocks(file, translated, english)
     const missing = markers(english).filter((m) => !translated.includes(m))
     if (missing.length > 0) report(file, `missing generated-section markers: ${missing.join(', ')}`)
-    if (!/^---\n[\s\S]*?\ndescription: /.test(translated)) report(file, 'no description in the frontmatter')
+    if (!/^---\n(?:[^\n]*\n)*?description: /.test(translated)) report(file, 'no description in the frontmatter')
     const want = anchors(english)
     const have = anchors(translated)
     if (want.join(' ') !== have.join(' ')) {
