@@ -55,7 +55,7 @@ jobs:
       PUG_LINT_TIME_SCALE: '2'
       # eslint-plugin-vue 10.0.0 predates ESLint 10 support, so only the `eslint9` entry runs.
       PUG_LINT_ESLINT: '9'
-      # The vue-compat table is generated against current versions; drift against the floor is expected.
+      # The crashing-rule list is measured against current versions; an older eslint-plugin-vue may differ.
       PUG_LINT_SKIP_COMPAT_DRIFT: '1'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -67,7 +67,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm -C packages/eslint-plugin add -D eslint9@npm:eslint@9.15.0 eslint-plugin-vue@10.0.0 vue-eslint-parser@10.0.0
-      - run: pnpm -C packages/eslint-plugin test
+      # The compat suite measures eslint-plugin-vue on ESLint 10 (the `eslint` package, not the
+      # `eslint9` alias); eslint-plugin-vue 10.0 predates ESLint 10 and its rules fail to load there.
+      # It is meant for current versions only (compat-latest.yml covers the newest).
+      - run: pnpm -C packages/eslint-plugin exec vitest run --exclude 'tests/compat/**'
 
   # The Cloudflare deploy builds the site after merge; catch dead links and broken pages first.
   docs:
