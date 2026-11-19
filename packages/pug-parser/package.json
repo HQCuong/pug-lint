@@ -1,9 +1,23 @@
 {
   "name": "@pug-lint/parser",
   "version": "0.0.0",
-  "private": true,
   "description": "Concrete syntax tree parser for Pug templates",
   "license": "MIT",
+  "author": "HQCuong",
+  "homepage": "https://pug-lint.hqcuong.workers.dev/parser/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HQCuong/pug-lint.git",
+    "directory": "packages/pug-parser"
+  },
+  "bugs": "https://github.com/HQCuong/pug-lint/issues",
+  "keywords": [
+    "pug",
+    "jade",
+    "parser",
+    "cst",
+    "syntax-tree"
+  ],
   "type": "module",
   "engines": {
     "node": "^20.19.0 || ^22.13.0 || >=24"
@@ -25,5 +39,9 @@
   "devDependencies": {
     "pug-lexer": "^5.0.1",
     "pug-parser": "^6.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   }
 }

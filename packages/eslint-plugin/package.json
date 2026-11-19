@@ -1,9 +1,26 @@
 {
   "name": "@pug-lint/eslint-plugin",
   "version": "0.0.0",
-  "private": true,
   "description": "ESLint lint and format rules for <template lang=\"pug\"> in Vue SFCs",
   "license": "MIT",
+  "author": "HQCuong",
+  "homepage": "https://pug-lint.hqcuong.workers.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HQCuong/pug-lint.git",
+    "directory": "packages/eslint-plugin"
+  },
+  "bugs": "https://github.com/HQCuong/pug-lint/issues",
+  "keywords": [
+    "eslint",
+    "eslintplugin",
+    "eslint-plugin",
+    "vue",
+    "pug",
+    "jade",
+    "lint",
+    "format"
+  ],
   "type": "module",
   "engines": {
     "node": "^20.19.0 || ^22.13.0 || >=24"
@@ -41,5 +58,9 @@
     "eslint9": "npm:eslint@^9.15.0",
     "pug": "^3.0.4",
     "vue-eslint-parser": "^10.4.2"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   }
 }
