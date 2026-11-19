@@ -110,9 +110,11 @@ hand:
    requests (changesets needs it to open the Version Packages pull request).
 2. Merge the first Version Packages pull request. Its publish job fails, since no trusted publisher
    is set up yet; that is expected.
-3. On the updated `main`: `npm login`, `pnpm install && pnpm build`, then `pnpm publish` in
-   `packages/pug-parser`, then in `packages/eslint-plugin` (`pnpm publish` replaces
-   `workspace:*` with the real version).
+3. On the updated `main`: `npm login`, `pnpm install && pnpm build`, then `pnpm pack` in
+   `packages/pug-parser` and in `packages/eslint-plugin` (`pnpm pack` replaces `workspace:*`
+   with the real version). In a real terminal, `npm publish ./<file>.tgz --access public`, parser
+   first; npm asks for 2FA in the browser. npm stages a publish made from a personal machine: the
+   package shows a `0.0.0-stage` placeholder until you approve the staged version on npmjs.com.
 4. On npmjs.com, for each package: Settings → Trusted Publisher → GitHub Actions, repository
    `HQCuong/pug-lint`, workflow `release.yml`. Then open the failed release run and use
    **Re-run failed jobs** (or push any commit to `main`): it skips the versions already on npm and
