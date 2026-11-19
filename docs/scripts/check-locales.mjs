@@ -80,6 +80,16 @@ function slugify(text) {
     .toLowerCase()
 }
 
+/** `text` without HTML tags, removed until none is left (a heading's text, not HTML to render). */
+function withoutTags(text) {
+  let previous
+  do {
+    previous = text
+    text = text.replace(/<[^<>]*>/g, '')
+  } while (text !== previous)
+  return text
+}
+
 /** The anchor of every h2–h4 heading, in order: its `{#id}`, or the slug of its text. */
 function anchors(text) {
   return [...withoutCode(text).matchAll(/^#{2,4} (.+)$/gm)].map(([, heading]) => {
@@ -89,7 +99,7 @@ function anchors(text) {
     const plain = heading
       .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
       .split('`')
-      .map((part, i) => (i % 2 === 1 ? part : part.replace(/<[^>]+>/g, '')))
+      .map((part, i) => (i % 2 === 1 ? part : withoutTags(part)))
       .join('')
     return slugify(plain)
   })

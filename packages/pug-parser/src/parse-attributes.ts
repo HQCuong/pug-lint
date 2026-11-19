@@ -259,7 +259,10 @@ export function parseAttributeBlock(
 // As in pug-lexer: a name ends on a word character, so "li: a" leaves the expansion colon.
 const TAG_NAME = /[A-Za-z](?:[\w:-]*\w)?/y
 // As in pug-lexer: a class name contains at least one letter or '_'.
-const CLASS_NAME = /[_a-zA-Z0-9-]*[_a-zA-Z][_a-zA-Z0-9-]*/y
+// A class name is a run of these characters with at least one letter or `_` (checked separately,
+// so the match stays one greedy run).
+const CLASS_CHARS = /[_a-zA-Z0-9-]+/y
+const hasClassLetter = (run: string): boolean => /[_a-zA-Z]/.test(run)
 const ID_NAME = /[\w-]+/y
 const MIXIN_NAME = /[-\w]+/y
 // As in pug-lexer: a first paren group that starts like `key=` holds attributes, not arguments.
@@ -318,7 +321,8 @@ export function parseTagHead(src: string, start: number, limit: number, named = 
   for (;;) {
     const sigil = src[pos]
     if (sigil === '.' || sigil === '#') {
-      const value = matchAt(sigil === '.' ? CLASS_NAME : ID_NAME, src, pos + 1)
+      const run = matchAt(sigil === '.' ? CLASS_CHARS : ID_NAME, src, pos + 1)
+      const value = run !== null && (sigil !== '.' || hasClassLetter(run)) ? run : null
       if (!value) break
       shorthands.push({ kind: sigil === '.' ? 'class' : 'id', value, range: [pos, pos + 1 + value.length] })
       pos += 1 + value.length
