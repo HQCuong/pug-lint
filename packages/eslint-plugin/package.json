@@ -4,7 +4,7 @@
   "description": "ESLint lint and format rules for <template lang=\"pug\"> in Vue SFCs",
   "license": "MIT",
   "author": "HQCuong",
-  "homepage": "https://pug-lint.hqcuong.workers.dev",
+  "homepage": "https://pug-lint.dev",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/HQCuong/pug-lint.git",

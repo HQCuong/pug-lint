@@ -3,7 +3,7 @@ import { defineConfig } from 'vitepress'
 import llmstxt from 'vitepress-plugin-llms'
 
 /** Where the site is served. Change it here when a custom domain is set up. */
-export const SITE_URL = 'https://pug-lint.hqcuong.workers.dev'
+export const SITE_URL = 'https://pug-lint.dev'
 const REPO = 'https://github.com/HQCuong/pug-lint'
 
 const ruleNames = readdirSync(new URL('../rules/', import.meta.url))

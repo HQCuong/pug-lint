@@ -5,9 +5,9 @@
 
 This file is for an AI agent setting up or fixing lint problems in a Vue project that uses
 `@pug-lint/eslint-plugin`. It ships in the npm package, so it matches the installed version. Full
-docs: <https://pug-lint.hqcuong.workers.dev>, also as Markdown for agents:
-[`/llms.txt`](https://pug-lint.hqcuong.workers.dev/llms.txt) (index) and
-[`/llms-full.txt`](https://pug-lint.hqcuong.workers.dev/llms-full.txt) (every page in one file).
+docs: <https://pug-lint.dev>, also as Markdown for agents:
+[`/llms.txt`](https://pug-lint.dev/llms.txt) (index) and
+[`/llms-full.txt`](https://pug-lint.dev/llms-full.txt) (every page in one file).
 
 ## What it does
 

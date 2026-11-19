@@ -10,6 +10,8 @@
     // Serve the 404.html VitePress generates for unknown paths instead of a bare 404.
     "not_found_handling": "404-page"
   },
+  // Served on the custom domain (the zone pug-lint.dev is on this Cloudflare account).
+  "routes": [{ "pattern": "pug-lint.dev", "custom_domain": true }],
   // Each pull request branch gets its own preview URL. Static assets need no preview-specific
   // settings, so the block stays empty.
   "previews": {}

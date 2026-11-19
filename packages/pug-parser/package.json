@@ -4,7 +4,7 @@
   "description": "Concrete syntax tree parser for Pug templates",
   "license": "MIT",
   "author": "HQCuong",
-  "homepage": "https://pug-lint.hqcuong.workers.dev/parser/",
+  "homepage": "https://pug-lint.dev/parser/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/HQCuong/pug-lint.git",

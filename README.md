@@ -7,7 +7,7 @@ ESLint linting and formatting for `<template lang="pug">` in Vue single-file com
   commas, shorthands. No Prettier needed.
 - Every fix is checked before it is applied, so `--fix` and fix-on-save never break a template.
 
-**Documentation: <https://pug-lint.hqcuong.workers.dev>**
+**Documentation: <https://pug-lint.dev>**
 
 ```vue
 <!-- before: eslint --fix -->
@@ -42,7 +42,7 @@ export default [
 ]
 ```
 
-Then run `npx eslint . --fix`, or [set up fix-on-save](https://pug-lint.hqcuong.workers.dev/guide/editor-setup)
+Then run `npx eslint . --fix`, or [set up fix-on-save](https://pug-lint.dev/guide/editor-setup)
 in your editor.
 
 ## Packages

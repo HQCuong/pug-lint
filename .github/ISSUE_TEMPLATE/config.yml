@@ -1,7 +1,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: Documentation
-    url: https://pug-lint.hqcuong.workers.dev
+    url: https://pug-lint.dev
     about: Setup, configuration, rules, known limitations and troubleshooting.
   - name: Report a security vulnerability
     url: https://github.com/HQCuong/pug-lint/security/advisories/new

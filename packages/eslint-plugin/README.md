@@ -11,7 +11,7 @@ components.
   fix-on-save do not break templates.
 - No Prettier, no separate formatter: fixes come from ESLint.
 
-**Documentation: <https://pug-lint.hqcuong.workers.dev>**
+**Documentation: <https://pug-lint.dev>**
 
 ## Requirements
 
@@ -45,7 +45,7 @@ options, the processor and the `vue/*` rules that must be off for Pug.
   `vue-pug/*` rule enabled.
 - `configs.recommended`: `base` plus every recommended `vue-pug/*` rule at `warn`.
 
-More in [Configuration](https://pug-lint.hqcuong.workers.dev/guide/configuration): templates indented under `<template>`
+More in [Configuration](https://pug-lint.dev/guide/configuration): templates indented under `<template>`
 (`baseIndent`), keeping a suppressed `vue/*` rule with `configure()`, trailing spaces and blank
 lines.
 
@@ -86,13 +86,13 @@ add to `.vscode/settings.json`:
 
 ## Learn more
 
-- [The fix guard](https://pug-lint.hqcuong.workers.dev/guide/fix-guard): how fixes are checked so they cannot break a template.
-- [`vue/*` rules on Pug](https://pug-lint.hqcuong.workers.dev/guide/vue-rules): which eslint-plugin-vue rules are turned off or
+- [The fix guard](https://pug-lint.dev/guide/fix-guard): how fixes are checked so they cannot break a template.
+- [`vue/*` rules on Pug](https://pug-lint.dev/guide/vue-rules): which eslint-plugin-vue rules are turned off or
   suppressed inside Pug templates, and why.
-- [Known limitations](https://pug-lint.hqcuong.workers.dev/guide/limitations) and
-  [unsupported Pug syntax](https://pug-lint.hqcuong.workers.dev/guide/unsupported-syntax).
-- [Troubleshooting](https://pug-lint.hqcuong.workers.dev/guide/troubleshooting).
-- [Migrating from eslint-plugin-vue-pug](https://pug-lint.hqcuong.workers.dev/guide/migration).
+- [Known limitations](https://pug-lint.dev/guide/limitations) and
+  [unsupported Pug syntax](https://pug-lint.dev/guide/unsupported-syntax).
+- [Troubleshooting](https://pug-lint.dev/guide/troubleshooting).
+- [Migrating from eslint-plugin-vue-pug](https://pug-lint.dev/guide/migration).
 
 ## License
 
