@@ -70,8 +70,31 @@ function textFp(text: string, group: readonly Text[]): string {
 
 const slice = (text: string, [start, end]: Range): string => text.slice(start, end)
 
-/** JavaScript source up to indentation: the whitespace around each line break counts as one `\n`. */
-const js = (source: string): string => source.replace(/[ \t]*\r?\n[ \t]*/g, '\n')
+const isBlank = (c: string | undefined): boolean => c === ' ' || c === '\t'
+
+/**
+ * JavaScript source up to indentation: the spaces and tabs around each line break, and the line
+ * break itself, count as one `\n`. A loop rather than a regex, so a long run of blanks stays linear.
+ */
+function js(source: string): string {
+  let out = ''
+  let i = 0
+  while (i < source.length) {
+    let j = i
+    while (isBlank(source[j])) j++
+    const crlf = source[j] === '\r' && source[j + 1] === '\n'
+    if (source[j] === '\n' || crlf) {
+      j += crlf ? 2 : 1
+      while (isBlank(source[j])) j++
+      out += '\n'
+    } else {
+      out += source.slice(i, j === i ? i + 1 : j)
+      if (j === i) j++
+    }
+    i = j
+  }
+  return out
+}
 
 /**
  * An attribute value that is not a static class/id: `s` none or string-like (`:a="true"` → `a` is a

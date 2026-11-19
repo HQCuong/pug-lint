@@ -413,7 +413,8 @@ ${record(verdicts.filter((v) => v.status === 'crash'))}
 }
 
 function renderMarkdown(verdicts: RuleVerdict[], version: string): string {
-  const cell = (s: string): string => s.replace(/\|/g, '\\|')
+  // Backslashes first, so the `\|` added for pipes is not escaped again.
+  const cell = (s: string): string => s.replace(/\\/g, '\\\\').replace(/\|/g, '\\|')
   const byStatus = (s: Status): number => verdicts.filter((v) => v.status === s).length
   const statuses: Status[] = ['ok', 'untested', 'crash', 'mismatch', 'fix-unsafe', 'fix-ugly', 'forced-suppress', 'forced-keep']
   return `# eslint-plugin-vue compatibility

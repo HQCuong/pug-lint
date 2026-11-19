@@ -86,4 +86,15 @@ describe('robustness: linearity', () => {
     expect(doc.lines).toHaveLength(LINEAR_LINES)
     expect(ms).toBeLessThan(LINEAR_BUDGET_MS)
   })
+
+  // Long runs of one character used to make two regexes quadratic (CodeQL js/polynomial-redos).
+  it.each([
+    ['blanks in code (fingerprint)', `- x = ${'\t'.repeat(100_000)}y\n`],
+    ['blanks before a line break in code (fingerprint)', `- x = 1${' \t'.repeat(50_000)}\n  + 2\n`],
+    ['dashes in an attribute block', `p(${'-'.repeat(100_000)})\n`],
+  ])('stays linear on %s', (_, src) => {
+    const t0 = performance.now()
+    fingerprint(parsePug(src))
+    expect(performance.now() - t0).toBeLessThan(LINEAR_BUDGET_MS)
+  })
 })

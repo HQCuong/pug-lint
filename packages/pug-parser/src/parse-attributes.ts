@@ -263,7 +263,16 @@ const CLASS_NAME = /[_a-zA-Z0-9-]*[_a-zA-Z][_a-zA-Z0-9-]*/y
 const ID_NAME = /[\w-]+/y
 const MIXIN_NAME = /[-\w]+/y
 // As in pug-lexer: a first paren group that starts like `key=` holds attributes, not arguments.
-const LOOKS_LIKE_ATTRIBUTES = /^\s*[-\w]+ *=/
+/** `s` starts like an attribute list: optional whitespace, a `[-\w]+` key, optional spaces, `=`. */
+function looksLikeAttributes(s: string): boolean {
+  let i = 0
+  while (i < s.length && /\s/.test(s[i]!)) i++
+  const keyStart = i
+  while (i < s.length && /[-\w]/.test(s[i]!)) i++
+  if (i === keyStart) return false
+  while (s[i] === ' ') i++
+  return s[i] === '='
+}
 const AND_ATTRIBUTES = '&attributes('
 /** Error codes meaning a block was not closed before its limit. */
 export const UNCLOSED = new Set(['unclosed-attributes', 'unterminated-string'])
@@ -401,7 +410,7 @@ export function parseMixinHead(src: string, start: number, limit: number): Mixin
       }
       args = [pos, close]
       pos = close
-    } else if (!LOOKS_LIKE_ATTRIBUTES.test(src.slice(pos + 1, close))) {
+    } else if (!looksLikeAttributes(src.slice(pos + 1, close))) {
       args = [pos, close + 1]
       pos = close + 1
     }
