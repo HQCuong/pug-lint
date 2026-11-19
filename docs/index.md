@@ -4,7 +4,7 @@ layout: home
 hero:
   name: pug-lint
   text: ESLint for Pug templates in Vue
-  tagline: Run your vue/* rules on <template lang="pug">, format the Pug with --fix, and never get a broken template back.
+  tagline: Run your vue/* rules on &lt;template lang="pug"&gt;, format the Pug with --fix, and never get a broken template back.
   actions:
     - theme: brand
       text: Get started
