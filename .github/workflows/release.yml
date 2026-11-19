@@ -31,7 +31,7 @@ jobs:
       contents: write # push the changeset-release/main branch
       pull-requests: write # open the Version Packages pull request
     outputs:
-      has-changesets: ${{ steps.changesets.outputs.hasChangesets }}
+      has-changesets: ${{ steps.changesets.outputs['has-changesets'] }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
@@ -44,11 +44,13 @@ jobs:
       - id: changesets
         uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
         with:
-          version: pnpm exec changeset version
-          commit: 'chore: version packages'
-          title: 'chore: version packages'
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+          version-script: pnpm exec changeset version
+          commit-message: 'chore: version packages'
+          pr-title: 'chore: version packages'
+          # Publishing, tags and GitHub releases happen in the jobs below.
+          create-github-releases: false
+          push-git-tags: false
+          github-token: ${{ github.token }}
 
   build:
     name: Build unpublished versions
