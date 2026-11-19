@@ -13,7 +13,7 @@ const ruleNames = readdirSync(new URL('../rules/', import.meta.url))
 
 export default defineConfig({
   title: 'pug-lint',
-  description: 'ESLint linting and formatting for <template lang="pug"> in Vue single-file components.',
+  description: 'ESLint linting and formatting for Pug templates in Vue single-file components.',
   lang: 'en-US',
   cleanUrls: true,
   lastUpdated: true,
