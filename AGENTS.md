@@ -10,8 +10,11 @@ ground rules and checks; the points below are the ones agents most often get wro
 
 - Run pnpm through corepack if `pnpm` is not on `PATH` (`corepack pnpm …`). Build before testing:
   the plugin's tests import the parser's `dist`.
-- Never hand-edit generated files: `src/configs/generated/vue-compat.ts`,
-  `docs/vue-compatibility.md`, and anything between `<!-- begin auto-generated … -->` markers.
+- Never hand-edit generated files: `packages/eslint-plugin/src/configs/generated/vue-compat.ts`,
+  `packages/eslint-plugin/docs/vue-compatibility.md`, and anything between
+  `<!-- begin auto-generated … -->` markers. Pages under `docs/rules/`, `docs/parser/` and
+  `docs/guide/{vue-compatibility,unsupported-syntax}.md` only include files from `packages/`:
+  edit those files instead.
   Regenerate with `pnpm -C packages/eslint-plugin compat` and `… docs:gen`.
 - Fixtures under `packages/*/tests/fixtures` are byte-exact (CRLF, BOM, tabs). Do not normalize
   them.

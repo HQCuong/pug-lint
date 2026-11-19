@@ -78,10 +78,20 @@ export default defineConfig({
     socialLinks: [{ icon: 'github', link: REPO }],
     editLink: {
       // Serialized to the client: it cannot use constants from this module.
-      pattern: ({ filePath }) =>
-        filePath.startsWith('rules/') && filePath !== 'rules/index.md'
-          ? `https://github.com/HQCuong/pug-lint/edit/main/packages/eslint-plugin/docs/${filePath}`
-          : `https://github.com/HQCuong/pug-lint/edit/main/docs/${filePath}`,
+      // Pages that only include a file from packages/ link to that file.
+      pattern: ({ filePath }) => {
+        const included: Record<string, string> = {
+          'guide/vue-compatibility.md': 'packages/eslint-plugin/docs/vue-compatibility.md',
+          'guide/unsupported-syntax.md': 'packages/pug-parser/docs/unsupported-syntax.md',
+          'parser/index.md': 'packages/pug-parser/README.md',
+        }
+        const source =
+          included[filePath] ??
+          (filePath.startsWith('rules/') && filePath !== 'rules/index.md'
+            ? `packages/eslint-plugin/docs/${filePath}`
+            : `docs/${filePath}`)
+        return `https://github.com/HQCuong/pug-lint/edit/main/${source}`
+      },
       text: 'Edit this page on GitHub',
     },
     search: { provider: 'local' },

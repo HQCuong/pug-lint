@@ -35,10 +35,19 @@ export default [
 ## Rules of thumb
 
 - Rule ids are `vue-pug/<name>`; the plugin key is always `vue-pug`.
-- Do not re-enable `vue/html-indent`, `vue/html-closing-bracket-newline`,
-  `vue/html-closing-bracket-spacing` or `vue/component-name-in-template-casing` for `.vue`
-  files: they crash on Pug templates. The error looks like
+- Do not re-enable these rules for `.vue` files: they crash on Pug templates, and
+  `configs.base` turns them off. The error looks like
   `TypeError: Cannot read properties of null (reading 'type')`.
+
+<!-- begin auto-generated crashing rules -->
+
+- `vue/component-name-in-template-casing`
+- `vue/html-closing-bracket-newline` (Pug replacement: `vue-pug/attribute-parens-newline`)
+- `vue/html-closing-bracket-spacing` (Pug replacement: `vue-pug/attribute-parens-spacing`)
+- `vue/html-indent` (Pug replacement: `vue-pug/indent`)
+
+<!-- end auto-generated crashing rules -->
+
 - Some layout `vue/*` rules are silenced inside Pug templates only; their `vue-pug/*` replacement
   does the job there. Do not "fix" this by turning the processor off.
 - Templates indented one level under `<template>`:

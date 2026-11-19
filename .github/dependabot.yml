@@ -16,8 +16,10 @@ updates:
       - dependency-name: vitepress-plugin-llms
     groups:
       # Peer dependencies of the plugin: update together and let CI + the compat check judge.
+      # `eslint9` (an npm:eslint@^9 alias for the ESLint 9 test run) is not updated by Dependabot,
+      # which skips aliased dependencies: bump it by hand.
       eslint-and-vue-tooling:
-        patterns: [eslint, eslint9, eslint-plugin-vue, vue-eslint-parser]
+        patterns: [eslint, eslint-plugin-vue, vue-eslint-parser]
       dev-dependencies:
         dependency-type: development
         update-types: [minor, patch]

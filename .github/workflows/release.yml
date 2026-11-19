@@ -69,8 +69,12 @@ jobs:
           cache: pnpm
 
       # Dependencies first: the parser is published before the plugin that depends on it.
-      - name: Find versions that are not on npm
+      # A version already on npm but without a GitHub release (a publish job that failed half-way)
+      # is still pending, so a later run creates its release.
+      - name: Find versions that are not on npm or have no GitHub release
         id: pending
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           pending=""
           for dir in packages/pug-parser packages/eslint-plugin; do
@@ -78,10 +82,11 @@ jobs:
             version=$(node -p "require('./$dir/package.json').version")
             if [ "$version" = "0.0.0" ]; then
               echo "$name: 0.0.0 is a placeholder, skipping."
-            elif npm view "$name@$version" version >/dev/null 2>&1; then
-              echo "$name@$version is already on npm."
+            elif npm view "$name@$version" version >/dev/null 2>&1 \
+              && gh release view "$name@$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              echo "$name@$version is already on npm and released on GitHub."
             else
-              echo "$name@$version will be published."
+              echo "$name@$version will be published and/or released."
               pending="$pending $dir"
             fi
           done
@@ -153,36 +158,32 @@ jobs:
           name: release
           path: release
 
-      - name: Publish to npm
-        run: |
-          for dir in $PACKAGES; do
-            slug=$(basename "$dir")
-            name=$(cat "release/$slug.name")
-            version=$(cat "release/$slug.version")
-            if npm view "$name@$version" version >/dev/null 2>&1; then
-              echo "$name@$version is already on npm, skipping publish (re-run)."
-              continue
-            fi
-            case "$version" in
-              *-*) npm publish "release/$slug.tgz" --access public --provenance --tag next ;;
-              *) npm publish "release/$slug.tgz" --access public --provenance ;;
-            esac
-          done
-
-      - name: Create GitHub releases
+      # One package at a time: publish, then its GitHub release, so a failure on the second package
+      # never leaves the first one without a release. Both steps skip what already exists (re-runs).
+      - name: Publish to npm and create GitHub releases
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           for dir in $PACKAGES; do
             slug=$(basename "$dir")
+            name=$(cat "release/$slug.name")
             version=$(cat "release/$slug.version")
-            tag="$(cat "release/$slug.name")@$version"
+            tag="$name@$version"
+            if npm view "$tag" version >/dev/null 2>&1; then
+              echo "$tag is already on npm, skipping publish."
+            else
+              # The ./ matters: npm reads a bare `release/x.tgz` as a GitHub repo shorthand.
+              case "$version" in
+                *-*) npm publish "./release/$slug.tgz" --access public --provenance --tag next ;;
+                *) npm publish "./release/$slug.tgz" --access public --provenance ;;
+              esac
+            fi
             if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
               echo "Release $tag already exists, skipping."
-              continue
+            else
+              flags=""
+              case "$version" in *-*) flags="--prerelease" ;; esac
+              gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+                --title "$tag" --notes-file "release/$slug.md" $flags
             fi
-            flags=""
-            case "$version" in *-*) flags="--prerelease" ;; esac
-            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-              --title "$tag" --notes-file "release/$slug.md" $flags
           done

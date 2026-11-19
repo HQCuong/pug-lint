@@ -95,6 +95,10 @@ Releases are automated with [changesets](https://github.com/changesets/changeset
 2. Merging that pull request publishes the new versions to npm with provenance, through npm
    Trusted Publishing (no token is stored), and creates a GitHub release per package.
 
+The Version Packages pull request is opened with the workflow's own token, and GitHub does not
+start other workflows for events made by that token, so CI does not run on it by itself. To get
+CI checks on it, close and reopen the pull request (or push a commit to its branch yourself).
+
 <details>
 <summary><strong>One-time setup (maintainers)</strong></summary>
 
@@ -110,8 +114,9 @@ version is published by hand:
    `packages/pug-parser`, then in `packages/eslint-plugin` (`pnpm publish` replaces
    `workspace:*` with the real version).
 5. On npmjs.com, for each package: Settings → Trusted Publisher → GitHub Actions, repository
-   `HQCuong/pug-lint`, workflow `release.yml`. Then re-run the failed release workflow: it skips
-   the versions already on npm and creates the GitHub releases.
+   `HQCuong/pug-lint`, workflow `release.yml`. Then open the failed release run and use
+   **Re-run failed jobs** (or push any commit to `main`): it skips the versions already on npm and
+   creates the missing GitHub releases.
 
 </details>
 

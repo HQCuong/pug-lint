@@ -88,7 +88,7 @@ If nothing is reported, check the ESLint output channel (View → Output → ESL
 ## 4. What not to expect
 
 These are known limitations, described in full in
-[packages/eslint-plugin/README.md, "Known limitations"](../packages/eslint-plugin/README.md#known-limitations):
+[Known limitations](guide/limitations.md):
 
 - A line break inside a `'…'` or `"…"` attribute value is a Pug syntax error; multi-line values
   need backticks. While a template has a parse error, no fix is applied inside it.

@@ -88,6 +88,7 @@ export const targets: Target[] = [
   { path: 'docs/rules/index.md', sections: [[RULES, () => renderRulesTable(plugin.rules, (name) => `/rules/${name}`)]] },
   { path: 'docs/guide/vue-rules.md', sections: [[VUE_RULES, renderVueRuleLists]] },
   { path: 'docs/guide/troubleshooting.md', sections: [[CRASHING, () => ruleList(Object.keys(vueCrashing))]] },
+  { path: 'packages/eslint-plugin/AGENTS.md', sections: [[CRASHING, () => ruleList(Object.keys(vueCrashing))]] },
 ]
 
 export const repoRoot = new URL('../../../../', import.meta.url)
