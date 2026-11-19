@@ -2,3 +2,8 @@ packages:
   - packages/*
   - examples/*
   - docs
+
+# VitePress 1.6.4 pins vite 5, which has open advisories (dev server only). vite 6 is patched and
+# works with VitePress 1.6 and @vitejs/plugin-vue 5; drop this once VitePress 2 is stable.
+overrides:
+  vitepress>vite: ^6.4.6
