@@ -4,7 +4,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { basename } from 'node:path'
 import type { Linter, Rule } from 'eslint'
-import { walk } from '@pug-lint/parser'
+import { walk } from 'pug-lint-parser'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import plugin from '../../src/index.ts'
 import type { DropReason } from '../../src/processor/guard.ts'

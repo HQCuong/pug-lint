@@ -1,7 +1,7 @@
-# @pug-lint/parser
+# pug-lint-parser
 
 A concrete syntax tree (CST) parser for Pug templates, built for linting and formatting tools.
-It is the parser behind [`@pug-lint/eslint-plugin`](https://github.com/HQCuong/pug-lint/tree/main/packages/eslint-plugin).
+It is the parser behind [`eslint-plugin-pug-lint`](https://github.com/HQCuong/pug-lint/tree/main/packages/eslint-plugin).
 
 - **Never throws.** Input it cannot parse becomes an entry in `errors`, and parsing continues on
   the next line.
@@ -16,7 +16,7 @@ It is the parser behind [`@pug-lint/eslint-plugin`](https://github.com/HQCuong/p
 ## Usage
 
 ```js
-import { parsePug, walk } from '@pug-lint/parser'
+import { parsePug, walk } from 'pug-lint-parser'
 
 const text = 'ul#list\n  li.item(v-for="x in xs" :key="x") {{ x }}\n'
 const doc = parsePug(text)

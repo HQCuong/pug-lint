@@ -1,6 +1,6 @@
 ---
-'@pug-lint/eslint-plugin': minor
-'@pug-lint/parser': minor
+'eslint-plugin-pug-lint': minor
+'pug-lint-parser': minor
 ---
 
 First release.

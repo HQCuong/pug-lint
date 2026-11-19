@@ -3,7 +3,7 @@
   "compilerOptions": {
     // Typecheck against the parser's source, not its gitignored dist/*.d.ts (absent on a clean checkout).
     "paths": {
-      "@pug-lint/parser": ["../pug-parser/src/index.ts"]
+      "pug-lint-parser": ["../pug-parser/src/index.ts"]
     }
   },
   "include": ["src", "tests", "tools", "tsdown.config.ts", "vitest.config.ts"]

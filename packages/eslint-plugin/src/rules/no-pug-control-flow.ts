@@ -1,7 +1,7 @@
 // vue-pug/no-pug-control-flow: reports Pug constructs that run at compile time (conditionals,
 // loops, code, mixins, `#{…}` interpolation, includes), which Vue never sees as reactive.
-import type { ControlKeyword } from '@pug-lint/parser'
-import { walk } from '@pug-lint/parser'
+import type { ControlKeyword } from 'pug-lint-parser'
+import { walk } from 'pug-lint-parser'
 import { createPugRule } from '../utils/create-rule.ts'
 
 type Category = 'control' | 'code' | 'mixin' | 'interpolation' | 'include'

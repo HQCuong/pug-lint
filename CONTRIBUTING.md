@@ -27,8 +27,8 @@ pnpm docs:dev    # documentation site at http://localhost:5173
 
 | Path | What it is |
 |---|---|
-| `packages/pug-parser` | `@pug-lint/parser`: the Pug CST parser. |
-| `packages/eslint-plugin` | `@pug-lint/eslint-plugin`: tokenizer for vue-eslint-parser, processor (suppression + fix guard), configs and the `vue-pug/*` rules. |
+| `packages/pug-parser` | `pug-lint-parser`: the Pug CST parser. |
+| `packages/eslint-plugin` | `eslint-plugin-pug-lint`: tokenizer for vue-eslint-parser, processor (suppression + fix guard), configs and the `vue-pug/*` rules. |
 | `docs` | The VitePress documentation site. |
 | `examples/vue-pug` | A small Vue project for trying the plugin by hand (`docs/manual-test.md`). |
 
@@ -102,18 +102,18 @@ CI checks on it, close and reopen the pull request (or push a commit to its bran
 <details>
 <summary><strong>One-time setup (maintainers)</strong></summary>
 
-Trusted Publishing can only be configured on a package that already exists on npm, so the first
-version is published by hand:
+The packages are published from the maintainer's personal npm account. Trusted Publishing can
+only be configured on a package that already exists on npm, so the first version is published by
+hand:
 
-1. Create the npm organization `pug-lint`.
-2. On GitHub: Settings → Actions → General → allow GitHub Actions to create and approve pull
+1. On GitHub: Settings → Actions → General → allow GitHub Actions to create and approve pull
    requests (changesets needs it to open the Version Packages pull request).
-3. Merge the first Version Packages pull request. Its publish job fails, since no trusted publisher
+2. Merge the first Version Packages pull request. Its publish job fails, since no trusted publisher
    is set up yet; that is expected.
-4. On the updated `main`: `pnpm install && pnpm build`, then `pnpm publish` in
+3. On the updated `main`: `npm login`, `pnpm install && pnpm build`, then `pnpm publish` in
    `packages/pug-parser`, then in `packages/eslint-plugin` (`pnpm publish` replaces
    `workspace:*` with the real version).
-5. On npmjs.com, for each package: Settings → Trusted Publisher → GitHub Actions, repository
+4. On npmjs.com, for each package: Settings → Trusted Publisher → GitHub Actions, repository
    `HQCuong/pug-lint`, workflow `release.yml`. Then open the failed release run and use
    **Re-run failed jobs** (or push any commit to `main`): it skips the versions already on npm and
    creates the missing GitHub releases.

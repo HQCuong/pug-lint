@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { walk } from '@pug-lint/parser'
+import { walk } from 'pug-lint-parser'
 import { describe, expect, it } from 'vitest'
 import { createPugRule } from '../../src/utils/create-rule.ts'
 import { runRule } from '../helpers/rule-tester.ts'

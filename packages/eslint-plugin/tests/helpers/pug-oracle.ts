@@ -1,7 +1,7 @@
 // The real-Pug oracle: does every Pug template of a file compile with the `pug` compiler, as Vue
 // hands it over? The template content is de-indented exactly as @vue/compiler-sfc does it.
 import { createRequire } from 'node:module'
-import { parsePug, walk } from '@pug-lint/parser'
+import { parsePug, walk } from 'pug-lint-parser'
 import { findPugTemplateRanges } from '../../src/shared/templates.ts'
 
 // Dev-only CommonJS package without types.

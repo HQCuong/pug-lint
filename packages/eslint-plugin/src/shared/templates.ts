@@ -1,8 +1,8 @@
 // Locates `<template lang="pug">` blocks in a Vue SFC and caches their parsed CSTs.
 // Imports nothing from ESLint or Vue: this file is also bundled into the CJS tokenizer,
 // which is a second module instance, so the cache lives on `globalThis`.
-import { fingerprint, parsePug } from '@pug-lint/parser'
-import type { PugDocument, Range } from '@pug-lint/parser'
+import { fingerprint, parsePug } from 'pug-lint-parser'
+import type { PugDocument, Range } from 'pug-lint-parser'
 
 export interface PugTemplate {
   /** Content between `<template …>` and `</template>`. */

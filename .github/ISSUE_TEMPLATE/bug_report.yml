@@ -29,7 +29,7 @@ body:
     id: versions
     attributes:
       label: Versions
-      description: Run `npm ls @pug-lint/eslint-plugin eslint eslint-plugin-vue vue-eslint-parser` and paste the output, plus your Node.js version.
+      description: Run `npm ls eslint-plugin-pug-lint eslint eslint-plugin-vue vue-eslint-parser` and paste the output, plus your Node.js version.
       render: text
     validations:
       required: true

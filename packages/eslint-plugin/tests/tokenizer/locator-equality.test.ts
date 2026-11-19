@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import type { AST } from 'vue-eslint-parser'
 import { describe, expect, it } from 'vitest'
-import type { Range } from '@pug-lint/parser'
+import type { Range } from 'pug-lint-parser'
 import { findPugTemplateRanges } from '../../src/shared/templates.ts'
 import { parseVue } from '../helpers/parse-vue.ts'
 import { toCRLF, vue } from '../helpers/vue.ts'

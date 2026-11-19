@@ -28,13 +28,13 @@ div.card( class="shadow" , :title = "title" )
 ## Quick start
 
 ```sh
-npm install --save-dev eslint eslint-plugin-vue vue-eslint-parser @pug-lint/eslint-plugin
+npm install --save-dev eslint eslint-plugin-vue vue-eslint-parser eslint-plugin-pug-lint
 ```
 
 ```js
 // eslint.config.js
 import pluginVue from 'eslint-plugin-vue'
-import vuePug from '@pug-lint/eslint-plugin'
+import vuePug from 'eslint-plugin-pug-lint'
 
 export default [
   ...pluginVue.configs['flat/recommended'],
@@ -49,8 +49,8 @@ in your editor.
 
 | Package | Description |
 |---|---|
-| [`@pug-lint/eslint-plugin`](packages/eslint-plugin) | The ESLint plugin: runs your `vue/*` rules on Pug templates, adds `vue-pug/*` formatting rules, and guards every fix. Start here. |
-| [`@pug-lint/parser`](packages/pug-parser) | The Pug parser behind it: a concrete syntax tree with exact source ranges that never throws. |
+| [`eslint-plugin-pug-lint`](packages/eslint-plugin) | The ESLint plugin: runs your `vue/*` rules on Pug templates, adds `vue-pug/*` formatting rules, and guards every fix. Start here. |
+| [`pug-lint-parser`](packages/pug-parser) | The Pug parser behind it: a concrete syntax tree with exact source ranges that never throws. |
 
 ## Contributing
 

@@ -1,8 +1,8 @@
 // Whitespace mutation for the convergence gate: structure-preserving noise, driven by the CST, that
 // the recommended `vue-pug/*` rules must undo exactly. Every site is mutated or not by a seeded PRNG,
 // so a failing seed reproduces.
-import type { AttributeBlock, PugDocument, PugLine, PugNode, Range, Tag } from '@pug-lint/parser'
-import { walk } from '@pug-lint/parser'
+import type { AttributeBlock, PugDocument, PugLine, PugNode, Range, Tag } from 'pug-lint-parser'
+import { walk } from 'pug-lint-parser'
 import { stringSpans } from '../../src/rules/indent.ts'
 import { getPugTemplates, templateFingerprint } from '../../src/shared/templates.ts'
 import { errorLineRanges } from '../../src/utils/create-rule.ts'

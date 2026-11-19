@@ -5,8 +5,8 @@
 // All conversions of one tag go into ONE fix carried by the tag's first report: they insert at the
 // same point, so separate fixes would overlap and a single pass would not reach the final form.
 // A tag with an id shorthand and an `id` attribute is a Pug error the user resolves: its id is left alone.
-import type { Attribute, Range, Tag } from '@pug-lint/parser'
-import { walk } from '@pug-lint/parser'
+import type { Attribute, Range, Tag } from 'pug-lint-parser'
+import { walk } from 'pug-lint-parser'
 import type { Rule } from 'eslint'
 import { createPugRule } from '../utils/create-rule.ts'
 

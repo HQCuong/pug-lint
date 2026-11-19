@@ -4,8 +4,8 @@
 // than its anchor takes the anchor's indentation when the indent character changes). Lines starting
 // inside a string or template literal are left alone: their whitespace is part of the value.
 // All reports share one fix, so a single surviving report re-indents the whole span.
-import type { Attribute, PugDocument, PugLine, Range } from '@pug-lint/parser'
-import { literalSpans, walk } from '@pug-lint/parser'
+import type { Attribute, PugDocument, PugLine, Range } from 'pug-lint-parser'
+import { literalSpans, walk } from 'pug-lint-parser'
 import { createPugRule } from '../utils/create-rule.ts'
 
 type Options = [indent: number | 'tab', { baseIndent: number }]

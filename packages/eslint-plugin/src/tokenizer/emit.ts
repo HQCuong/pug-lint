@@ -1,7 +1,7 @@
 // CST -> vue-eslint-parser intermediate tokens (StartTag/EndTag/Text/Mustache) plus the
 // low-level tokens and comments that end up in `templateBody.tokens` / `.comments`.
 // Mapping table: plan Design §3. Imports nothing from ESLint or Vue (bundled into the CJS tokenizer).
-import type { Attribute, AttributeValue, Comment, Control, Filter, MixinCall, PugNode, Range, Tag, Text } from '@pug-lint/parser'
+import type { Attribute, AttributeValue, Comment, Control, Filter, MixinCall, PugNode, Range, Tag, Text } from 'pug-lint-parser'
 import type { LineIndex, Position } from './line-index.ts'
 
 export interface SourceLocation {

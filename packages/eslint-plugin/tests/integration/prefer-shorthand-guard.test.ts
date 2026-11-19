@@ -3,7 +3,7 @@
 // which proves the pass is due to the class-aware fingerprint and not to a disabled guard.
 import type { Linter, Rule } from 'eslint'
 import pluginVue from 'eslint-plugin-vue'
-import { walk } from '@pug-lint/parser'
+import { walk } from 'pug-lint-parser'
 import { describe, expect, it, vi } from 'vitest'
 import { buildConfigs } from '../../src/configs/index.ts'
 import plugin from '../../src/index.ts'

@@ -3,8 +3,8 @@
 // the target quote nor a backslash, so nothing is ever re-escaped. Backtick values are kept unless
 // `backticks: 'convert'`, and even then only single-line ones without `${}` and without any quote
 // or backslash in their body. Expression values are never touched.
-import type { Attribute, AttributeBlock, AttributeValue } from '@pug-lint/parser'
-import { walk } from '@pug-lint/parser'
+import type { Attribute, AttributeBlock, AttributeValue } from 'pug-lint-parser'
+import { walk } from 'pug-lint-parser'
 import { createPugRule } from '../utils/create-rule.ts'
 
 type Options = ['double' | 'single', { backticks: 'keep' | 'convert' }]

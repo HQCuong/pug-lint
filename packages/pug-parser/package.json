@@ -1,5 +1,5 @@
 {
-  "name": "@pug-lint/parser",
+  "name": "pug-lint-parser",
   "version": "0.0.0",
   "description": "Concrete syntax tree parser for Pug templates",
   "license": "MIT",

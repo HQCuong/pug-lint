@@ -2,7 +2,7 @@
 // eslint / eslint-plugin-vue / vue-eslint-parser from the npm registry, and runs the ESLint CLI.
 // This checks what a user gets from npm: `exports`, `files`, the ESM build, dist/tokenizer.cjs being
 // loadable by vue-eslint-parser's `require`, config serialization under `--cache`, and the runtime
-// dependency on @pug-lint/parser.
+// dependency on pug-lint-parser.
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -16,7 +16,7 @@ const parserDir = fileURLToPath(new URL('../../../pug-parser', import.meta.url))
 const isWindows = process.platform === 'win32'
 
 const config = `import pluginVue from 'eslint-plugin-vue'
-import vuePug from '@pug-lint/eslint-plugin'
+import vuePug from 'eslint-plugin-pug-lint'
 
 export default [...pluginVue.configs['flat/recommended'], ...vuePug.configs.recommended]
 `
@@ -72,7 +72,7 @@ beforeAll(() => {
   for (const dir of [parserDir, pluginDir]) mustRun('pnpm', ['pack', '--pack-destination', packDir], dir)
   const tarballs = readdirSync(packDir)
   parserTarball = join(packDir, tarballs.find((f) => f.startsWith('pug-lint-parser-'))!)
-  pluginTarball = join(packDir, tarballs.find((f) => f.startsWith('pug-lint-eslint-plugin-'))!)
+  pluginTarball = join(packDir, tarballs.find((f) => f.startsWith('eslint-plugin-pug-lint-'))!)
 }, scaled(60_000))
 
 afterAll(() => {
@@ -89,8 +89,8 @@ describe('packed packages', () => {
         eslint: eslintRange,
         'eslint-plugin-vue': '^10.0.0',
         'vue-eslint-parser': '^10.0.0',
-        '@pug-lint/parser': `file:${parserTarball}`,
-        '@pug-lint/eslint-plugin': `file:${pluginTarball}`,
+        'pug-lint-parser': `file:${parserTarball}`,
+        'eslint-plugin-pug-lint': `file:${pluginTarball}`,
       }
       writeFileSync(join(project, 'package.json'), JSON.stringify({ name: 'packed-test', private: true, type: 'module', devDependencies }))
       writeFileSync(join(project, 'eslint.config.js'), config)

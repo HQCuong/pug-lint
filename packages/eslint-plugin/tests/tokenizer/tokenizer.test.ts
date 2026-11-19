@@ -337,7 +337,7 @@ describe('PugTokenizer', () => {
 
   it('bundles the parser source into dist/tokenizer.cjs instead of requiring it', () => {
     const bundle = readFileSync(tokenizerPath, 'utf8')
-    expect(bundle).not.toMatch(/require\(["']@pug-lint\/parser/)
+    expect(bundle).not.toMatch(/require\(["']pug-lint-parser/)
     expect(bundle).toContain('module.exports = ')
   })
 

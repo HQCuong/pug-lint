@@ -5,7 +5,7 @@ import { scaled } from './tests/helpers/time-scale.ts'
 export default defineConfig({
   resolve: {
     alias: {
-      '@pug-lint/parser': fileURLToPath(new URL('../pug-parser/src/index.ts', import.meta.url)),
+      'pug-lint-parser': fileURLToPath(new URL('../pug-parser/src/index.ts', import.meta.url)),
     },
   },
   test: {

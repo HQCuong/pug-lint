@@ -3,8 +3,8 @@
 // `always` requires both breaks in a multiline block; `never` forbids them; a block that is not
 // multiline never has them. Same-line spaces in a gap without a break belong to
 // vue-pug/attribute-parens-spacing; an empty block is left alone.
-import type { AttributeBlock, Range } from '@pug-lint/parser'
-import { walk } from '@pug-lint/parser'
+import type { AttributeBlock, Range } from 'pug-lint-parser'
+import { walk } from 'pug-lint-parser'
 import { createPugRule } from '../utils/create-rule.ts'
 import { depthAt } from '../utils/depth-at.ts'
 

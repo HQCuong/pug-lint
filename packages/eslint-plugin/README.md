@@ -1,4 +1,4 @@
-# @pug-lint/eslint-plugin
+# eslint-plugin-pug-lint
 
 ESLint linting and formatting for `<template lang="pug">` (and `lang="jade"`) in Vue single-file
 components.
@@ -22,7 +22,7 @@ components.
 ## Install
 
 ```sh
-npm install --save-dev eslint eslint-plugin-vue vue-eslint-parser @pug-lint/eslint-plugin
+npm install --save-dev eslint eslint-plugin-vue vue-eslint-parser eslint-plugin-pug-lint
 ```
 
 ## Configure
@@ -30,7 +30,7 @@ npm install --save-dev eslint eslint-plugin-vue vue-eslint-parser @pug-lint/esli
 ```js
 // eslint.config.js
 import pluginVue from 'eslint-plugin-vue'
-import vuePug from '@pug-lint/eslint-plugin'
+import vuePug from 'eslint-plugin-pug-lint'
 
 export default [
   ...pluginVue.configs['flat/recommended'],

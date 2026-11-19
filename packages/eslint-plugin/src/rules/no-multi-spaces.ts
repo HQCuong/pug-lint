@@ -2,8 +2,8 @@
 // the same attribute block becomes one space. A comma stays attached to the attribute before it, so
 // only the run after the gap's last comma is measured. Values, the gaps next to the parens
 // (vue-pug/attribute-parens-spacing) and inline text after the tag head are never touched.
-import type { AttributeBlock } from '@pug-lint/parser'
-import { walk } from '@pug-lint/parser'
+import type { AttributeBlock } from 'pug-lint-parser'
+import { walk } from 'pug-lint-parser'
 import { createPugRule } from '../utils/create-rule.ts'
 
 export default createPugRule<[]>({

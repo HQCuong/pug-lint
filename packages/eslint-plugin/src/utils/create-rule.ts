@@ -1,6 +1,6 @@
 // createPugRule(): the shape of every `vue-pug/*` rule. It runs `check` once per Pug template
 // of the file, with that template's CST, and reports by CST range.
-import type { PugDocument, Range } from '@pug-lint/parser'
+import type { PugDocument, Range } from 'pug-lint-parser'
 import type { Rule } from 'eslint'
 import { getPugTemplates } from '../shared/templates.ts'
 

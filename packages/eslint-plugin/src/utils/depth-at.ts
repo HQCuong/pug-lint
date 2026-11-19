@@ -1,6 +1,6 @@
 // depthAt(): the logical depth (PugLine.depth) of the line holding an offset, e.g. a tag's depth
 // from its head offset. Inserted indentation is `doc.indentUnit` repeated per depth.
-import type { PugLine } from '@pug-lint/parser'
+import type { PugLine } from 'pug-lint-parser'
 
 /** The depth of the line holding `offset` (0 when no line holds it). */
 export function depthAt(lines: readonly PugLine[], offset: number): number {

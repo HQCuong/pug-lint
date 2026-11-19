@@ -1,7 +1,7 @@
 // Hides messages of `vue/*` rules that misreport on Pug, but only inside a Pug template:
 // the same rules keep working on HTML templates and on `<script>`.
 import type { Linter } from 'eslint'
-import type { Range } from '@pug-lint/parser'
+import type { Range } from 'pug-lint-parser'
 import { getPugTemplates } from '../shared/templates.ts'
 import { createLineIndex } from '../tokenizer/line-index.ts'
 import type { LineIndex } from '../tokenizer/line-index.ts'

@@ -1,7 +1,7 @@
 // HTML-twin parity: the Vue AST our tokenizer builds from a Pug template has the same element skeleton
 // as the one stock vue-eslint-parser builds from that template rendered by the real `pug` compiler.
 import { readdirSync, readFileSync } from 'node:fs'
-import { parsePug, walk } from '@pug-lint/parser'
+import { parsePug, walk } from 'pug-lint-parser'
 import type { AST } from 'vue-eslint-parser'
 import { describe, expect, it } from 'vitest'
 import { findPugTemplateRanges } from '../../src/shared/templates.ts'

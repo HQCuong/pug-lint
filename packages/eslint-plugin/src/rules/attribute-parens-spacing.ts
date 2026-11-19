@@ -2,8 +2,8 @@
 // `)` of an attribute block. `never` removes it; `always` requires some. A side whose gap holds a
 // line break belongs to vue-pug/attribute-parens-newline and is left alone, and so is an empty
 // (or whitespace-only) block.
-import type { AttributeBlock, Range } from '@pug-lint/parser'
-import { walk } from '@pug-lint/parser'
+import type { AttributeBlock, Range } from 'pug-lint-parser'
+import { walk } from 'pug-lint-parser'
 import { createPugRule } from '../utils/create-rule.ts'
 
 type Options = ['never' | 'always']

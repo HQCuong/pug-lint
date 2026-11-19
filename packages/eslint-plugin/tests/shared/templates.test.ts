@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import type { AST } from 'vue-eslint-parser'
 import vueEslintParser from 'vue-eslint-parser'
 import { describe, expect, it } from 'vitest'
-import type { Range, Tag } from '@pug-lint/parser'
+import type { Range, Tag } from 'pug-lint-parser'
 import { findPugTemplateRanges, getPugTemplates, templateFingerprint } from '../../src/shared/templates.ts'
 import { vue } from '../helpers/vue.ts'
 

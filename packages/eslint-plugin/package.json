@@ -1,5 +1,5 @@
 {
-  "name": "@pug-lint/eslint-plugin",
+  "name": "eslint-plugin-pug-lint",
   "version": "0.0.0",
   "description": "ESLint lint and format rules for <template lang=\"pug\"> in Vue SFCs",
   "license": "MIT",
@@ -46,7 +46,7 @@
     "docs:check": "pnpm -w run build && node tools/docs/rules-table.ts --check"
   },
   "dependencies": {
-    "@pug-lint/parser": "workspace:*"
+    "pug-lint-parser": "workspace:*"
   },
   "peerDependencies": {
     "eslint": "^9.15.0 || ^10.0.0",

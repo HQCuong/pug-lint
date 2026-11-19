@@ -2,8 +2,8 @@
 // `never` removes every comma; `always` puts exactly one between each pair of attributes. A comma
 // before the first or after the last attribute is always unexpected. Removing a comma adds one
 // space only when it would otherwise glue two attributes together.
-import type { AttributeBlock, Range } from '@pug-lint/parser'
-import { walk } from '@pug-lint/parser'
+import type { AttributeBlock, Range } from 'pug-lint-parser'
+import { walk } from 'pug-lint-parser'
 import { createPugRule } from '../utils/create-rule.ts'
 
 type Options = ['never' | 'always']

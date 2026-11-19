@@ -1,5 +1,5 @@
 {
-  "name": "@pug-lint/docs",
+  "name": "pug-lint-docs",
   "private": true,
   "type": "module",
   "scripts": {

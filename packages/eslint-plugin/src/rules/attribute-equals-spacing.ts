@@ -1,8 +1,8 @@
 // vue-pug/attribute-equals-spacing: the whitespace between an attribute's key and its `=` / `!=`
 // operator, and between the operator and the value. Both gaps must be empty. A gap holding a line
 // break is left alone: only same-line whitespace is this rule's.
-import type { Attribute, AttributeBlock, Range } from '@pug-lint/parser'
-import { walk } from '@pug-lint/parser'
+import type { Attribute, AttributeBlock, Range } from 'pug-lint-parser'
+import { walk } from 'pug-lint-parser'
 import { createPugRule } from '../utils/create-rule.ts'
 
 const hasLineBreak = (s: string): boolean => /[\r\n]/.test(s)

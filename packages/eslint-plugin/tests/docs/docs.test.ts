@@ -121,9 +121,9 @@ describe('docs site', () => {
 describe('README', () => {
   const readme = read('README.md')
 
-  it('lists every rule as vue-pug/<name>, with no @pug-lint/ rule ids', () => {
+  it('lists every rule as vue-pug/<name>, with no rule ids derived from the package name', () => {
     for (const name of ruleNames) expect(readme).toContain(`[\`vue-pug/${name}\`]`)
-    expect(readme.match(/@pug-lint\/(?!eslint-plugin\b|parser\b)[\w-]+/g)).toBeNull()
+    expect(readme.match(/`@?pug-lint\/[\w-]+`/g)).toBeNull()
   })
 })
 

@@ -4,7 +4,7 @@ import type { UserConfig } from 'tsdown'
 
 /**
  * dist/tokenizer.cjs: the file vue-eslint-parser `require`s. Everything is bundled, and
- * `@pug-lint/parser` comes from its source so the bundle never holds a missing or stale parser build.
+ * `pug-lint-parser` comes from its source so the bundle never holds a missing or stale parser build.
  * It never cleans `dist`: the test global setup rebuilds it alone next to an existing ESM build.
  */
 export const tokenizerConfig: UserConfig = {
@@ -15,7 +15,7 @@ export const tokenizerConfig: UserConfig = {
   dts: false,
   clean: false,
   deps: { alwaysBundle: [/.*/] },
-  alias: { '@pug-lint/parser': fileURLToPath(new URL('../pug-parser/src/index.ts', import.meta.url)) },
+  alias: { 'pug-lint-parser': fileURLToPath(new URL('../pug-parser/src/index.ts', import.meta.url)) },
   // CommonJS on purpose: vue-eslint-parser loads the tokenizer with a plain `require`.
   checks: { legacyCjs: false },
 }

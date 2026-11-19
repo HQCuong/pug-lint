@@ -4,8 +4,8 @@
 // the candidate text. Candidates are parsed directly, not through the shared CST cache, so they
 // never evict the entries rules and the tokenizer rely on.
 import type { Linter, Rule } from 'eslint'
-import { fingerprint, parsePug } from '@pug-lint/parser'
-import type { Range } from '@pug-lint/parser'
+import { fingerprint, parsePug } from 'pug-lint-parser'
+import type { Range } from 'pug-lint-parser'
 import {
   findLaterRootTemplateRanges,
   findPugTemplateRanges,

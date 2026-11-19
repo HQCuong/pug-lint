@@ -1,6 +1,6 @@
 // vue-eslint-parser `templateTokenizer` for `<template lang="pug">` (contract: vue-eslint-parser
 // src/html/custom-tokenizer.ts). Built to dist/tokenizer.cjs, which vue-eslint-parser `require`s.
-import type { PugDocument, Range } from '@pug-lint/parser'
+import type { PugDocument, Range } from 'pug-lint-parser'
 import { findLaterRootTemplateRanges, getPugTemplates } from '../shared/templates.ts'
 import { Emitter } from './emit.ts'
 import type { IntermediateToken, Token } from './emit.ts'

@@ -1,4 +1,4 @@
-import type { Range } from '@pug-lint/parser'
+import type { Range } from 'pug-lint-parser'
 
 /** A Vue SFC whose template is `pugBody`, followed by `script`. */
 export function vue(pugBody: string, script = ''): string {

@@ -5,8 +5,8 @@
 // content, so the `/` is removed only when nothing follows it on its line and the tag has no nested
 // lines other than unbuffered comments; otherwise it is reported without a fix. A component that
 // already self-closes is left alone under `always-components`, whatever follows it.
-import type { Tag } from '@pug-lint/parser'
-import { walk } from '@pug-lint/parser'
+import type { Tag } from 'pug-lint-parser'
+import { walk } from 'pug-lint-parser'
 import { createPugRule } from '../utils/create-rule.ts'
 
 type Options = ['never' | 'always-components']

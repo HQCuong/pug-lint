@@ -6,8 +6,8 @@
 // The fix replaces the whitespace right before the attribute (a comma stays with the attribute before
 // it); the gaps after `(` and before `)` belong to vue-pug/attribute-parens-newline. Tags inside a tag
 // interpolation `#[...]` are left alone: their line is a text line and cannot break.
-import type { Attribute, AttributeBlock } from '@pug-lint/parser'
-import { walk } from '@pug-lint/parser'
+import type { Attribute, AttributeBlock } from 'pug-lint-parser'
+import { walk } from 'pug-lint-parser'
 import { createPugRule } from '../utils/create-rule.ts'
 import { depthAt } from '../utils/depth-at.ts'
 

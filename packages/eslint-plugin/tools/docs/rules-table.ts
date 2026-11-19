@@ -4,7 +4,7 @@
 // inside Pug templates and the crashing rules in Troubleshooting (both from the generated compat
 // lists).
 // eslint-doc-generator is not used: it derives the rule prefix from the package name
-// (`@pug-lint/...` instead of `vue-pug/...`) and finds no recommended rules in our array configs.
+// (`pug-lint/...` instead of `vue-pug/...`) and finds no recommended rules in our array configs.
 //
 //   node tools/docs/rules-table.ts           update the files
 //   node tools/docs/rules-table.ts --check   exit 1 when one is stale

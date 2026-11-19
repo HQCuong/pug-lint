@@ -5,8 +5,8 @@
 // under `always` a `div` inside an interpolation is reported without a fix. A `div` whose first
 // shorthand does not follow the name directly (`div(a).b`) is reported without a fix too: removing
 // the name would leave a head that starts with `(`.
-import type { PugNode, Tag } from '@pug-lint/parser'
-import { walk } from '@pug-lint/parser'
+import type { PugNode, Tag } from 'pug-lint-parser'
+import { walk } from 'pug-lint-parser'
 import { createPugRule } from '../utils/create-rule.ts'
 
 type Options = ['always' | 'never']
