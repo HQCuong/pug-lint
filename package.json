@@ -29,6 +29,6 @@
     "vitest": "^4.1.12"
   },
   "simple-git-hooks": {
-    "pre-push": "pnpm check"
+    "pre-push": "if command -v pnpm >/dev/null 2>&1; then pnpm check; else corepack pnpm check; fi"
   }
 }
