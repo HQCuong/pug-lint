@@ -69,7 +69,7 @@ div.card( class="shadow" , :title = "title" )
 npm install --save-dev eslint eslint-plugin-vue vue-eslint-parser eslint-plugin-pug-vue
 ```
 
-Requiere Node.js `^20.19.0 || ^22.13.0 || >=24`, ESLint `^9.15.0 || ^10.0.0` con configuración
+Requiere Node.js `^22.13.0 || >=24`, ESLint `^9.15.0 || ^10.0.0` con configuración
 flat, eslint-plugin-vue `^10` y vue-eslint-parser `^10`.
 
 ## Inicio rápido

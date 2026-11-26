@@ -16,7 +16,7 @@ description: "安装 eslint-plugin-pug-vue，用 ESLint 对 Vue 单文件组件�
 
 ## 环境要求 {#requirements}
 
-- Node.js `^20.19.0 || ^22.13.0 || >=24`
+- Node.js `^22.13.0 || >=24`
 - ESLint `^9.15.0 || ^10.0.0`，只支持 flat config（`eslint.config.js`）
 - `eslint-plugin-vue` `^10.0.0` 和 `vue-eslint-parser` `^10.0.0`
 

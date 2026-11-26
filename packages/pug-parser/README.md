@@ -28,7 +28,7 @@ It is the parser behind [`eslint-plugin-pug-vue`](https://github.com/HQCuong/pug
 - **Parses a slice in place.** `parsePug(text, { start, end })` parses only `text[start, end)` (for
   example the content of a `<template lang="pug">` block); ranges still refer to the whole `text`.
 - **Keeps line endings.** LF and CRLF are both handled; `doc.eol` is the first line ending found.
-- No runtime dependencies. ESM only. Node.js `^20.19.0 || ^22.13.0 || >=24`.
+- No runtime dependencies. ESM only. Node.js `^22.13.0 || >=24`.
 
 ## Usage
 

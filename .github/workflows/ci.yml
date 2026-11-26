@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: ['20.19', '22', '24']
+        node: ['22', '24']
         os: [ubuntu-latest, windows-latest]
     env:
       # Wall-clock budgets in the tests are multiplied by this; shared runners are slower and noisier.
@@ -41,11 +41,8 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
-      # tools/*.ts run on Node's type stripping, which 20.19 lacks; their output does not depend on the Node version.
       - run: pnpm -C packages/eslint-plugin compat:check
-        if: matrix.node != '20.19'
       - run: pnpm -C packages/eslint-plugin docs:check
-        if: matrix.node != '20.19'
 
   # The lowest supported ESLint 9 / eslint-plugin-vue / vue-eslint-parser.
   floor:

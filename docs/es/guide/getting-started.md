@@ -20,7 +20,7 @@ componentes de un solo archivo de Vue:
 
 ## Requisitos {#requirements}
 
-- Node.js `^20.19.0 || ^22.13.0 || >=24`
+- Node.js `^22.13.0 || >=24`
 - ESLint `^9.15.0 || ^10.0.0`, solo configuración flat (`eslint.config.js`)
 - `eslint-plugin-vue` `^10.0.0` y `vue-eslint-parser` `^10.0.0`
 

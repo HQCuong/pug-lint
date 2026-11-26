@@ -20,7 +20,7 @@ Formatierungswerkzeuge. Er ist der Parser hinter
   beziehen sich weiterhin auf den ganzen `text`.
 - **Behält Zeilenenden.** LF und CRLF werden beide verarbeitet; `doc.eol` ist das erste gefundene
   Zeilenende.
-- Keine Laufzeit-Abhängigkeiten. Nur ESM. Node.js `^20.19.0 || ^22.13.0 || >=24`.
+- Keine Laufzeit-Abhängigkeiten. Nur ESM. Node.js `^22.13.0 || >=24`.
 
 ## Verwendung {#usage}
 

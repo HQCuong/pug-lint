@@ -17,7 +17,7 @@ formatação. É o parser por trás do [`eslint-plugin-pug-vue`](https://github.
   exemplo o conteúdo de um bloco `<template lang="pug">`); os ranges continuam se referindo ao
   `text` inteiro.
 - **Preserva as quebras de linha.** LF e CRLF são tratados; `doc.eol` é a primeira quebra de linha encontrada.
-- Sem dependências em tempo de execução. Somente ESM. Node.js `^20.19.0 || ^22.13.0 || >=24`.
+- Sem dependências em tempo de execução. Somente ESM. Node.js `^22.13.0 || >=24`.
 
 ## Uso {#usage}
 

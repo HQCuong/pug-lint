@@ -18,7 +18,7 @@ C'est le parser derrière [`eslint-plugin-pug-vue`](https://github.com/HQCuong/p
   à tout le `text`.
 - **Conserve les fins de ligne.** LF et CRLF sont tous deux gérés ; `doc.eol` est la première fin de
   ligne rencontrée.
-- Aucune dépendance à l'exécution. ESM uniquement. Node.js `^20.19.0 || ^22.13.0 || >=24`.
+- Aucune dépendance à l'exécution. ESM uniquement. Node.js `^22.13.0 || >=24`.
 
 ## Utilisation {#usage}
 
