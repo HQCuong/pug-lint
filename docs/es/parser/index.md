@@ -19,7 +19,7 @@ y de formato. Es el parser que hay detrás de
   siguen refiriéndose a todo el `text`.
 - **Conserva los finales de línea.** Se admiten LF y CRLF; `doc.eol` es el primer final de línea
   encontrado.
-- Sin dependencias en tiempo de ejecución. Solo ESM. Node.js `^20.19.0 || ^22.13.0 || >=24`.
+- Sin dependencias en tiempo de ejecución. Solo ESM. Node.js `^22.13.0 || >=24`.
 
 ## Uso {#usage}
 

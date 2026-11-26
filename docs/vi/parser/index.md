@@ -17,7 +17,7 @@ Nó là parser đứng sau [`eslint-plugin-pug-vue`](https://github.com/HQCuong/
   nội dung của một block `<template lang="pug">`); các range vẫn tính theo toàn bộ `text`.
 - **Giữ nguyên ký tự xuống dòng.** LF và CRLF đều được xử lý; `doc.eol` là ký tự xuống dòng đầu tiên
   tìm thấy.
-- Không có runtime dependency. Chỉ ESM. Node.js `^20.19.0 || ^22.13.0 || >=24`.
+- Không có runtime dependency. Chỉ ESM. Node.js `^22.13.0 || >=24`.
 
 ## Cách dùng {#usage}
 

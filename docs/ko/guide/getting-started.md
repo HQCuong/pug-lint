@@ -17,7 +17,7 @@ description: "eslint-plugin-pug-vue를 설치하고 ESLint로 Vue 단일 파일 
 
 ## 요구 사항 {#requirements}
 
-- Node.js `^20.19.0 || ^22.13.0 || >=24`
+- Node.js `^22.13.0 || >=24`
 - ESLint `^9.15.0 || ^10.0.0`, flat config만 지원(`eslint.config.js`)
 - `eslint-plugin-vue` `^10.0.0`과 `vue-eslint-parser` `^10.0.0`
 

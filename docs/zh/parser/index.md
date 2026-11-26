@@ -15,7 +15,7 @@ description: "pug-lint-parser：面向 lint 和格式化工具的 Pug 解析器�
 - **就地解析一个片段。** `parsePug(text, { start, end })` 只解析 `text[start, end)`（例如
   `<template lang="pug">` 块的内容）；范围仍然指向整个 `text`。
 - **保留换行符。** LF 和 CRLF 都能处理；`doc.eol` 是找到的第一个换行符。
-- 没有运行时依赖。仅支持 ESM。Node.js `^20.19.0 || ^22.13.0 || >=24`。
+- 没有运行时依赖。仅支持 ESM。Node.js `^22.13.0 || >=24`。
 
 ## 用法 {#usage}
 

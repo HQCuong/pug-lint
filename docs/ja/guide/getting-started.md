@@ -14,7 +14,7 @@ description: "eslint-plugin-pug-vue をインストールして、Vue のシン�
 
 ## 必要な環境 {#requirements}
 
-- Node.js `^20.19.0 || ^22.13.0 || >=24`
+- Node.js `^22.13.0 || >=24`
 - ESLint `^9.15.0 || ^10.0.0`（flat config のみ、`eslint.config.js`）
 - `eslint-plugin-vue` `^10.0.0` と `vue-eslint-parser` `^10.0.0`
 

@@ -18,7 +18,7 @@ description: "Установите eslint-plugin-pug-vue и линтите ша�
 
 ## Требования {#requirements}
 
-- Node.js `^20.19.0 || ^22.13.0 || >=24`
+- Node.js `^22.13.0 || >=24`
 - ESLint `^9.15.0 || ^10.0.0`, только flat config (`eslint.config.js`)
 - `eslint-plugin-vue` `^10.0.0` и `vue-eslint-parser` `^10.0.0`
 

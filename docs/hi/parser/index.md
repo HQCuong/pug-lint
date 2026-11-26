@@ -16,7 +16,7 @@ Pug templates के लिए एक concrete syntax tree (CST) parser, जो 
 - **Slice को वहीं parse करता है।** `parsePug(text, { start, end })` केवल `text[start, end)` को parse करता है (जैसे
   `<template lang="pug">` block की सामग्री); ranges फिर भी पूरे `text` की ओर इशारा करती हैं।
 - **Line endings बनाए रखता है।** LF और CRLF दोनों संभाले जाते हैं; `doc.eol` मिली पहली line ending है।
-- कोई runtime dependencies नहीं। केवल ESM। Node.js `^20.19.0 || ^22.13.0 || >=24`।
+- कोई runtime dependencies नहीं। केवल ESM। Node.js `^22.13.0 || >=24`।
 
 ## उपयोग {#usage}
 ```js
