@@ -1,5 +1,11 @@
 # pug-lint-parser
 
+## 0.2.0
+
+### Minor Changes
+
+- 80931b9: Drop Node.js 20 support. Both packages now require Node.js `^22.13.0 || >=24`.
+
 ## 0.1.1
 
 ### Patch Changes
